@@ -637,7 +637,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
   }
 
   //collapsible div
-  if (!empty($inactive)) {
+  if (!empty($inactive['links'])) {
     $handle = t('Inactive Courses');
     $content .= theme('ctools_collapsible', array('handle' => $handle, 'content' => $inactive_content, 'collapsed' => TRUE));
   }
