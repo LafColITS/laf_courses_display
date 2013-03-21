@@ -619,7 +619,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
       $content .= theme('ctools_dropdown', array('title' => t('Select Term'), 'links' => $drop_down_menu));
       $content .= "</div>";
     }
-    $content .= "<div id='ajax_content_response_$instanceID'>";
+    $content .= "<div id='ajax_content_response_$instanceID' class='item-list'>";
     if ($use_term_code) {
       $term_display = parse_term_code($default_term);
       $content .= "<h2><strong>$term_display</strong></h2>";
