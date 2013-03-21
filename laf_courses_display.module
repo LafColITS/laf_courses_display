@@ -619,10 +619,10 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
       $content .= theme('ctools_dropdown', array('title' => t('Select Term'), 'links' => $drop_down_menu));
       $content .= "</div>";
     }
-    $content .= "<div id='ajax_content_response'>";
+    $content .= "<div id='ajax_content_response_$instanceID'>";
     if ($use_term_code) {
       $term_display = parse_term_code($default_term);
-      $content .= "<h3><strong>$term_display</strong></h3>";
+      $content .= "<h2><strong>$term_display</strong></h2>";
     }
     $content .= theme('links', $variables);
   }
@@ -653,9 +653,11 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
 function ajax_callback_link($term_code, $type = 'ajax') {
   if ($type == 'ajax') {
     ctools_include('ajax');
+    $offset = strrpos($term_code, '_');
+    $instanceID = substr($term_code, $offset + 1);
     $output = ajax_get_content($term_code);
     $commands = array();
-    $commands[] = ajax_command_html('#ajax_content_response', $output);
+    $commands[] = ajax_command_html("#ajax_content_response_$instanceID", $output);
     print ajax_render($commands);
   } 
   else {
