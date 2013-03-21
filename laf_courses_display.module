@@ -379,8 +379,9 @@ function laf_courses_display_block_view($block_name = '') {
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
     $instanceID = substr($block_name, $offset + 1);
-    $result = db_query("SELECT use_term_code FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
+    $result = db_query("SELECT use_term_code, moodle_site_url FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
     $use_term_code = $result->use_term_code;
+    $site_url = $result->moodle_site_url;
     $uid = $user->uid;
     $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instanceID))->fetch();
     if ($result) {
@@ -408,13 +409,13 @@ function laf_courses_display_block_view($block_name = '') {
     $title = substr($block_name, 20, $offset);
 
     //output block content
-    $block = array();
-    if (!empty($content)) {
-      $block = array(
+    $linkout = l("See More at $title", $site_url);
+    $content .= $linkout;
+    $block = array(
         'subject' => t($title),
         'content' => $content,
       );
-    }
+
     return $block;
   }
 }
@@ -574,7 +575,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
 
   foreach ($formatted as $link_info) {
     $links[$i]['href'] = create_course_link($link_info, $instanceID);
-    $links[$i]['title'] = $link_info['fullname'];
+    $links[$i]['title'] = html_entity_decode($link_info['fullname']);
     // if there is a term field specified, generate the link string
     if (!empty($link_info['term'])) {
       $links[$i]['term'] = $link_info['term']; //store term for 'safekeeping' now
@@ -601,7 +602,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
     }
     $i = $i + 1;
   }
-  if (!empty($variables)) {
+  if ($check = !empty($variables)) {
     if ($use_term_code){
       $variables['links'] = term_select($variables['links'], $selected_term, $drop_links);
       $default_term = array_pop($variables['links']);
@@ -640,7 +641,9 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
     $handle = t('Inactive Courses');
     $content .= theme('ctools_collapsible', array('handle' => $handle, 'content' => $inactive_content, 'collapsed' => TRUE));
   }
-  $content .= "</div>"; 
+  if ($check) {
+    $content .= "</div>";
+  }
   return $content;
 }
 
@@ -699,7 +702,12 @@ function term_select($array, $term_code, $term_array) {
       $terms[] = $current_term;
       sort($terms);
       if ($terms[count($terms) - 1] == $current_term){
-        $term_code = $terms[count($terms) - 2];
+        if (count($terms) != 1) {
+          $term_code = $terms[count($terms) - 2];
+        } 
+        else {
+          $term_code = $current_term;
+        }
       }
       else {
         $term_code = $terms[array_search($current_term, $terms) + 1];
