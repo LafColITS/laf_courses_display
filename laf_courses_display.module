@@ -410,7 +410,7 @@ function laf_courses_display_block_view($block_name = '') {
 
     //output block content
     $linkout = l("See More at $title", $site_url);
-    $content .= $linkout;
+    $content .= "<div class='see-more'> $linkout </div>";
     $block = array(
         'subject' => t($title),
         'content' => $content,
@@ -477,6 +477,7 @@ function call_webservice($instanceID, $uid, $request_url){
     'uid' => $uid,
     'JSON' => $json_result,
     'timestamp' => REQUEST_TIME,
+    'expire' => 0,
   ))
   ->execute();
   

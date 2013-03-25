@@ -86,6 +86,12 @@ function laf_courses_display_schema() {
 		  'type' => 'text',
 		  'size' => 'normal',
 		),
+    'expire' => array(
+      'description' => 'A placeholder expire column to make Drupal cache calls happy.',
+      'type' => 'int',
+      'not null' => TRUE,
+      'unsigned' => TRUE,
+    ),
 	  ),
 	);
   return $schema;
