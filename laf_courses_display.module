@@ -612,18 +612,20 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
     $variables['attributes'] = array();
     if ($use_term_code == 1 && $drop_down_flag == 1) {
       //create a drop down menu
-      $drop_down_menu = array();
+      /*$drop_down_menu = array();
       foreach ($drop_links as $drop) {
         $drop_down_menu[] = array('title' => t($drop['title']), 'href' => 'laf_courses_display/link/' . $drop['code'] . '_' . $instanceID . '/nojs/', 'attributes' => array('class' => array('use-ajax'))); 
       }
       $content .= "<div id='dropdown' style=\"display:none\">"; 
       $content .= theme('ctools_dropdown', array('title' => t('Select Term'), 'links' => $drop_down_menu));
       $content .= "</div>";
+    }*/
+      $content .= drupal_render(drupal_get_form('get_term_form', $drop_links, $default_term, $instanceID));
     }
     $content .= "<div id='ajax_content_response_$instanceID' class='item-list'>";
     if ($use_term_code) {
       $term_display = parse_term_code($default_term);
-      $content .= "<h2><strong>$term_display</strong></h2>";
+      //$content .= "<h2><strong>$term_display</strong></h2>";
     }
     $content .= theme('links', $variables);
   }
@@ -651,7 +653,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
 /**
 * Ajax callback
 */
-function ajax_callback_link($term_code, $type = 'ajax') {
+/*function ajax_callback_link($term_code, $type = 'ajax') {
   if ($type == 'ajax') {
     ctools_include('ajax');
     $offset = strrpos($term_code, '_');
@@ -664,6 +666,12 @@ function ajax_callback_link($term_code, $type = 'ajax') {
   else {
     return $output;
   }
+}*/
+
+function ajax_callback_link($form, $form_state) {
+  $term_code = $form_state['values']['term-form'];
+  $output = ajax_get_content($term_code);
+  return $output;
 }
 
 /**
@@ -753,5 +761,24 @@ function calculate_term() {
     $term = $year . '10';
   }
   return $term;
+}
+
+function get_term_form($form, &$form_state, $links, $default, $instanceID) {
+  watchdog("MANUAL DEBUG", print_r($links, TRUE));
+  $options = array();
+  foreach ($links as $link) {
+    $options[$link['code'] . "_" . $instanceID] = $link['title'];
+  }
+  $form['term-form'] = array(
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => $default,
+    '#ajax' => array(
+      'callback' => 'ajax_callback_link',
+      'wrapper' => 'ajax_content_response_' . $instanceID,
+    ),
+  );
+
+  return $form;
 }
 
