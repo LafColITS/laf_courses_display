@@ -736,6 +736,7 @@ function get_term_form($form, &$form_state, $links, $default, $instanceID) {
   foreach ($links as $link) {
     $options[$link['code'] . "_" . $instanceID] = $link['title'];
   }
+  $default = $default . '_' . $instanceID;
   $form['term-form'] = array(
     '#type' => 'select',
     '#options' => $options,
