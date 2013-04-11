@@ -479,12 +479,9 @@ function call_webservice($instanceID, $uid, $request_url){
 /**
 * Formats the links back to the courses in Moodle
 */
-function create_course_link($link_info, $instanceID) {
+function create_course_link($link_info, $site_url, $shibIDP) {
   //do some formatting stuff
-  $result = db_query("SELECT moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
-  $site_url = $result->moodle_site_url;
   $auth_url = str_replace('http://', 'https://', $site_url);
-  $shibIDP = $result->shib_IDP;
   $courseID = $link_info['id']; 
   $link_url = $auth_url . '/alt?providerID=' . $shibIDP . '&target=' . $site_url . '/course/view.php?id=' . $courseID;
 
@@ -564,9 +561,13 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
   if (!$selected_term) { 
     $drop_down_flag = 1;
   }
+  // get link generation information from database
+  $result = db_query("SELECT moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
+  $site_url = $result->moodle_site_url;
+  $shibIDP = $result->shib_IDP;
 
   foreach ($formatted as $link_info) {
-    $links[$i]['href'] = create_course_link($link_info, $instanceID);
+    $links[$i]['href'] = create_course_link($link_info, $site_url, $shibIDP);
     $links[$i]['title'] = html_entity_decode($link_info['fullname']);
     // if there is a term field specified, generate the link string
     if (!empty($link_info['term'])) {
