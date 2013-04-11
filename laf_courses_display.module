@@ -66,14 +66,6 @@ function laf_courses_display_menu() {
     'access arguments' => array('administer site configuration'),
   );
   
-  $items['laf_courses_display/link/%'] = array(
-    'page callback' => 'ajax_callback_link',
-    'page arguments' => array(2),
-    'type' => MENU_CALLBACK,
-    'access callback' => 'user_access',
-    'access arguments' => array('access content'),
-  );
-
   return $items;
 }
 
@@ -560,7 +552,6 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
   drupal_add_js($js, 'inline');
 
   //format course links
-  //STILL NEED TO IMPLEMENT COURSE TERM LOGIC
   
   $content = ''; //renderable output
   $variables = array(); //for default content
@@ -611,21 +602,11 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
     uasort($variables['links'], 'compare_links_alphabetical');
     $variables['attributes'] = array();
     if ($use_term_code == 1 && $drop_down_flag == 1) {
-      //create a drop down menu
-      /*$drop_down_menu = array();
-      foreach ($drop_links as $drop) {
-        $drop_down_menu[] = array('title' => t($drop['title']), 'href' => 'laf_courses_display/link/' . $drop['code'] . '_' . $instanceID . '/nojs/', 'attributes' => array('class' => array('use-ajax'))); 
-      }
-      $content .= "<div id='dropdown' style=\"display:none\">"; 
-      $content .= theme('ctools_dropdown', array('title' => t('Select Term'), 'links' => $drop_down_menu));
-      $content .= "</div>";
-    }*/
       $content .= drupal_render(drupal_get_form('get_term_form', $drop_links, $default_term, $instanceID));
     }
     $content .= "<div id='ajax_content_response_$instanceID' class='item-list'>";
     if ($use_term_code) {
       $term_display = parse_term_code($default_term);
-      //$content .= "<h2><strong>$term_display</strong></h2>";
     }
     $content .= theme('links', $variables);
   }
@@ -650,24 +631,10 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
   return $content;
 }
 
-/**
-* Ajax callback
-*/
-/*function ajax_callback_link($term_code, $type = 'ajax') {
-  if ($type == 'ajax') {
-    ctools_include('ajax');
-    $offset = strrpos($term_code, '_');
-    $instanceID = substr($term_code, $offset + 1);
-    $output = ajax_get_content($term_code);
-    $commands = array();
-    $commands[] = ajax_command_html("#ajax_content_response_$instanceID", $output);
-    print ajax_render($commands);
-  } 
-  else {
-    return $output;
-  }
-}*/
 
+/**
+* Ajax callback function
+*/
 function ajax_callback_link($form, $form_state) {
   $term_code = $form_state['values']['term-form'];
   $output = ajax_get_content($term_code);
@@ -764,7 +731,6 @@ function calculate_term() {
 }
 
 function get_term_form($form, &$form_state, $links, $default, $instanceID) {
-  watchdog("MANUAL DEBUG", print_r($links, TRUE));
   $options = array();
   foreach ($links as $link) {
     $options[$link['code'] . "_" . $instanceID] = $link['title'];
