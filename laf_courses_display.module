@@ -401,7 +401,7 @@ function laf_courses_display_block_view($block_name = '') {
     $title = substr($block_name, 20, $offset);
 
     //output block content
-    $linkout = l("See More at $title", $site_url);
+    $linkout = l("See More at $title", $site_url, array('attributes' => array('target' => '_blank')));
     $content .= "<div class='see-more'> $linkout </div>";
     $block = array(
         'subject' => t($title),
