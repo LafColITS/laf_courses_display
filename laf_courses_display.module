@@ -392,6 +392,8 @@ function laf_courses_display_block_view($block_name = '') {
     //here we need to generate default term code instead of passing 0
     if (!empty($formatted)) {
       $content = generate_block_content($formatted, $instanceID, $use_term_code, 0);
+    } else {
+      $content = '';
     }
 
     $offset = strrpos($block_name, '_');
@@ -438,7 +440,7 @@ function call_webservice($instanceID, $uid, $request_url){
 
   //now we get the data from our curl request
   $ch = curl_init($request_url);
-
+  
   //Option to receive data as string directly
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
   
