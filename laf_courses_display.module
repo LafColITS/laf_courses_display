@@ -453,7 +453,7 @@ function call_webservice($instanceID, $uid, $request_url){
   $formatted = json_decode($json_result, TRUE);
 
   //check for moodle response error
-  if (array_key_exists('exception', $formatted)) {
+  if (empty($formatted) || array_key_exists('exception', $formatted)) {
     return array();
   }
 
