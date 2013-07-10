@@ -399,9 +399,10 @@ function laf_courses_display_block_view($block_name = '') {
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
     $title = substr($block_name, 20, $offset);
-
+    
+    $auth_url = str_replace('http://', 'https://', $site_url);
     //output block content
-    $linkout = l("See More at $title", $site_url, array('attributes' => array('target' => '_blank')));
+    $linkout = l("See More at $title", $auth_url . '/alt?providerID=' . $shibIDP . '&target=' . $site_url, array('attributes' => array('target' => '_blank')));
     $content .= "<div class='see-more'> $linkout </div>";
     $block = array(
         'subject' => t($title),
