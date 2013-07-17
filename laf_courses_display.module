@@ -368,9 +368,10 @@ function laf_courses_display_block_view($block_name = '') {
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
     $instanceID = substr($block_name, $offset + 1);
-    $result = db_query("SELECT use_term_code, moodle_site_url FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
+    $result = db_query("SELECT use_term_code, moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
     $use_term_code = $result->use_term_code;
     $site_url = $result->moodle_site_url;
+    $shibIDP = $result->shib_IDP;
     $uid = $user->uid;
     $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instanceID))->fetch();
     if ($result) {
