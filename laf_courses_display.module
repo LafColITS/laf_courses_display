@@ -402,6 +402,7 @@ function laf_courses_display_block_view($block_name = '') {
     
     $auth_url = str_replace('http://', 'https://', $site_url);
     //output block content
+
     $linkout = l("See More at $title", $auth_url . '/alt?providerID=' . $shibIDP . '&target=' . $site_url, array('attributes' => array('target' => '_blank')));
     $content .= "<div class='see-more'> $linkout </div>";
     $block = array(
@@ -425,7 +426,7 @@ function format_curl_request($instanceID, $uid) {
   $params = array('username' => $user_mail);
 
   $url = $moodle_base_url . '/webservice/rest/server.php?wstoken=' . $webservice_token . '&wsfunction=' . $webservice_function_name . '&moodlewsrestformat=json&' . http_build_query($params);
-
+  watchdog('debug', $url);
   return $url;
 }
 
@@ -587,6 +588,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
         $j = $j + 1;
        }
     }
+    // TODO: Fix data problem when only visible course has no term code. Hack fix on line 601
     if ($link_info['visible'] == 1) {
       $variables['links'][] = $links[$i];
     }
@@ -602,7 +604,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
     } 
     uasort($variables['links'], 'compare_links_alphabetical');
     $variables['attributes'] = array();
-    if ($use_term_code == 1 && $drop_down_flag == 1) {
+    if ($use_term_code == 1 && $drop_down_flag == 1 && !empty($drop_links)) {
       $content .= drupal_render(drupal_get_form('get_term_form', $drop_links, $default_term, $instanceID));
     }
     $content .= "<div id='ajax_content_response_$instanceID' class='item-list'>";
