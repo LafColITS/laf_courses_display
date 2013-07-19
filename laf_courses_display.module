@@ -569,7 +569,7 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
 
   foreach ($formatted as $link_info) {
     $links[$i]['href'] = create_course_link($link_info, $site_url, $shibIDP);
-    $links[$i]['title'] = html_entity_decode($link_info['fullname']);
+    $links[$i]['title'] = html_entity_decode($link_info['fullname'], ENT_QUOTES);
     $links[$i]['attributes'] = array('target' => '_blank');
     // if there is a term field specified, generate the link string
     if (!empty($link_info['term'])) {
