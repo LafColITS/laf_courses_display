@@ -1,99 +1,106 @@
 <?php
 
+/**
+ * @file
+ * Install file for Lafayette Courses Display module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
 function laf_courses_display_schema() {
   $schema['laf_courses_display_config'] = array(
-	'description' => 'Holds config data for all courses block instances.',
-	'fields' => array(
-	  'instanceID' => array(
-		'description' => 'The instance identifier for a courses block.',
-		'type' => 'serial',
-		'unsigned' => TRUE,
-		'not null' => TRUE,
-	  ),
-	  'title' => array(
-		'description' => 'The human-readable title for this instance. Becomes the block display title.',
-		'type' => 'varchar',
-		'length' => 255,
-		'not null' => TRUE,
-		'default' => '',
-	  ),
-	  'moodle_site_url' => array(
-		'description' => 'The base url for webservice calls and links.',
-		'type' => 'varchar',
-		'length' => 255,
-		'not null' => TRUE,
-		'default' => '',
-	  ),
-	  'webservice_token' => array(
-		'description' => 'The webservice token for getting Moodle data.',
-		'type' => 'varchar',
-		'length' => 32,
-		'not null' => TRUE,
-		'default' => '',
-	  ),
-	  'webservice_function_name' => array(
-		'description' => 'The name of the Moodle function to call for data access.',
-		'type' => 'varchar',
-		'length' => 255,
-		'not null' => TRUE,
-		'default' => '',
-	  ),
-	  'shib_IDP' => array(
-		'description' => 'The Shibboleth IDP string to be included in the Moodle webservice URL.',
-		'type' => 'varchar',
-		'length' => 255,
-		'not null' => TRUE,
-		'default' => '',
-	  ),
-	  'use_term_code' => array(
-		'description' => 'A flag indicating whether to use term codes as display filters.',
-		'type' => 'int',
-		'unsigned' => TRUE,
-		'not null' => TRUE,
-		'default' => 0,
-	  ),
-	),
-	'unique keys' => array(
-	  'instanceID' => array('instanceID'),
-		'title' => array('title'),
-	),
-	'primary key' => array('instanceID'),
+    'description' => 'Holds config data for all courses block instances.',
+    'fields' => array(
+      'instanceID' => array(
+        'description' => 'The instance identifier for a courses block.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'description' => 'The human-readable title for this instance. Becomes the block display title.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'moodle_site_url' => array(
+        'description' => 'The base url for webservice calls and links.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'webservice_token' => array(
+        'description' => 'The webservice token for getting Moodle data.',
+        'type' => 'varchar',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'webservice_function_name' => array(
+        'description' => 'The name of the Moodle function to call for data access.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'shib_IDP' => array(
+        'description' => 'The Shibboleth IDP string to be included in the Moodle webservice URL.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'use_term_code' => array(
+        'description' => 'A flag indicating whether to use term codes as display filters.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'unique keys' => array(
+      'instanceID' => array('instanceID'),
+      'title' => array('title'),
+    ),
+    'primary key' => array('instanceID'),
   );
 
   $schema['laf_courses_display_cache'] = array(
-	'description' => 'Stores course information on a per-user basis. Refreshes after a new request more than 24 hours after data entry.',
-	  'fields' => array(
-		'instanceID' => array(
-		  'description' => 'The instance identifier for this cached info.',
-		  'type' => 'int',
-		  'not null' => TRUE,
-		  'unsigned' => TRUE,
-		),
-		'uid' => array(
-		  'description' => 'The Drupal user ID of the user associated with the courses.',
-		  'type' => 'int',
-		  'not null' => TRUE,
-		  'unsigned' => TRUE,
-		),
-		'timestamp' => array(
-		  'description' => 'The time that the data was stored in the database.',
-		  'type' => 'int',
-		  'not null' => TRUE,
-		  'unsigned' => TRUE,
-		),
-		'JSON' => array(
-		  'description' => 'The returned result of the Moodle webservice call, in its entirety.',
-		  'type' => 'text',
-		  'size' => 'normal',
-		),
-    'expire' => array(
-      'description' => 'A placeholder expire column to make Drupal cache calls happy.',
-      'type' => 'int',
-      'not null' => TRUE,
-      'unsigned' => TRUE,
+    'description' => 'Stores course information on a per-user basis. Refreshes after a new request more than 24 hours after data entry.',
+    'fields' => array(
+      'instanceID' => array(
+        'description' => 'The instance identifier for this cached info.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'The Drupal user ID of the user associated with the courses.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'timestamp' => array(
+        'description' => 'The time that the data was stored in the database.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'JSON' => array(
+        'description' => 'The returned result of the Moodle webservice call, in its entirety.',
+        'type' => 'text',
+        'size' => 'normal',
+      ),
+      'expire' => array(
+        'description' => 'A placeholder expire column to make Drupal cache calls happy.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
     ),
-	  ),
-	);
+  );
   return $schema;
 }
-

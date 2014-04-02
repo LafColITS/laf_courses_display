@@ -1,36 +1,34 @@
 <?php
 
+/**
+ * @file
+ * A module for declaring Moodle-courses display blocks in Drupal
+ *
+ * This module allows administrators to define blocks that access specially 
+ * designed Moodle webservices to display users course listings in Drupal.
+ */
+
 
 /**
-* @file
-* A module for declaring Moodle-courses display blocks in Drupal
-*
-* This module allows administrators to define blocks that access specially 
-* designed Moodle webservices to display users course listings in Drupal.
-*/
-
-
-/** 
-* Implements hook_help() . 
-*/ 
+ * Implements hook_help(). 
+ */
 function laf_courses_display_help($path, $arg) {
   if ($path == 'admin/help#laf_courses_display') {
-    return t('A module that diplays a user\'s Moodle courses in Drupal');
+    return t("A module that diplays a user's Moodle courses in Drupal");
   }
 }
 
 /**
-* Implements hook_flush_caches() .
-*/
-function laf_courses_display_flush_caches() { 
+ * Implements hook_flush_caches().
+ */
+function laf_courses_display_flush_caches() {
   return array('laf_courses_display_cache');
 }
 
 /**
-* Implements hook_menu() .
-*/
+ * Implements hook_menu().
+ */
 function laf_courses_display_menu() {
-  //Need to figure out what I want my menu to look like and research implementations
   $items['admin/config/services/laf_courses_display'] = array(
     'title' => 'Lafayette College Courses Display Configuration',
     'description' => 'Courses block configuration',
@@ -65,15 +63,15 @@ function laf_courses_display_menu() {
     'page arguments' => array('laf_courses_display_delete_form', 5),
     'access arguments' => array('administer site configuration'),
   );
-  
+
   return $items;
 }
 
 /**
-* "Form" for deleting an existing block
-*/
-function laf_courses_display_delete_form($form, &$form_state, $instanceID) {
-  $result = db_query('SELECT title FROM {laf_courses_display_config} WHERE instanceID = :ID', array(':ID' => $instanceID))->fetch();
+ * Form for deleting an existing block.
+ */
+function laf_courses_display_delete_form($form, &$form_state, $instance_id) {
+  $result = db_query('SELECT title FROM {laf_courses_display_config} WHERE instanceID = :ID', array(':ID' => $instance_id))->fetch();
   $form['laf_courses_display_delete_confirm'] = array(
     '#type' => 'checkbox',
     '#title' => 'Delete ' . $result->title . '?',
@@ -81,7 +79,7 @@ function laf_courses_display_delete_form($form, &$form_state, $instanceID) {
   );
   $form['laf_courses_display_delete_instanceID'] = array(
     '#type' => 'value',
-    '#value' => $instanceID
+    '#value' => $instance_id,
   );
   $form['laf_courses_display_delete_title'] = array(
     '#type' => 'value',
@@ -95,13 +93,13 @@ function laf_courses_display_delete_form($form, &$form_state, $instanceID) {
 }
 
 /**
-* Submit handler for deleting an existing block
-*/
+ * Submit handler for deleting an existing block.
+ */
 function laf_courses_display_delete_form_submit($form, &$form_state) {
-  $instanceID = $form_state['values']['laf_courses_display_delete_instanceID'];
-  $title = 'laf_courses_display_' . $form_state['values']['laf_courses_display_delete_title'] . '_' . $instanceID;
+  $instance_id = $form_state['values']['laf_courses_display_delete_instanceID'];
+  $title = 'laf_courses_display_' . $form_state['values']['laf_courses_display_delete_title'] . '_' . $instance_id;
   $num_deleted = db_delete('laf_courses_display_config')
-    ->condition('instanceID', $instanceID)
+    ->condition('instanceID', $instance_id)
     ->execute();
   $num_deleted = db_delete('block')
     ->condition('delta', $title)
@@ -112,11 +110,11 @@ function laf_courses_display_delete_form_submit($form, &$form_state) {
 
 
 /**
-* Form for editing an existing block
-*/
-function laf_courses_display_edit_form($form, &$form_state, $instanceID) {
-  $result = db_query("SELECT * FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
-  
+ * Form for editing an existing block.
+ */
+function laf_courses_display_edit_form($form, &$form_state, $instance_id) {
+  $result = db_query("SELECT * FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
+
   $form['laf_courses_display_edit_title'] = array(
     '#type' => 'textfield',
     '#title' => t('Courses block title'),
@@ -139,7 +137,7 @@ function laf_courses_display_edit_form($form, &$form_state, $instanceID) {
     '#type' => 'textfield',
     '#title' => t('Webservice Token'),
     '#description' => t('The token used for authentication to the webservice.'),
-    '#size' => 40, 
+    '#size' => 40,
     '#maxlength' => 32,
     '#required' => TRUE,
     '#default_value' => $result->webservice_token,
@@ -154,7 +152,7 @@ function laf_courses_display_edit_form($form, &$form_state, $instanceID) {
     '#default_value' => $result->webservice_function_name,
   );
   $form['laf_courses_display_edit_shibIDP'] = array(
-    '#type' => 'textfield', 
+    '#type' => 'textfield',
     '#title' => t('Shibboleth IDP String'),
     '#description' => t('The Shibboleth IDP string to use for webservice authentication.'),
     '#size' => 40,
@@ -170,40 +168,40 @@ function laf_courses_display_edit_form($form, &$form_state, $instanceID) {
   );
   $form['laf_courses_display_edit_instanceID'] = array(
     '#type' => 'value',
-    '#value' => $instanceID,
+    '#value' => $instance_id,
   );
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save settings'),
   );
-  
+
   return $form;
 
 }
 
 /**
-* Validation handler for edit block form
-*/
+ * Validation handler for edit block form.
+ */
 function laf_courses_display_edit_form_validate($form, &$form_state) {
-  $instanceID = $form_state['values']['laf_courses_display_edit_instanceID'];
+  $instance_id = $form_state['values']['laf_courses_display_edit_instanceID'];
   $title = $form_state['values']['laf_courses_display_edit_title'];
-  $result = db_query("SELECT count(*) AS count FROM {laf_courses_display_config} WHERE title = :title AND instanceID != :ID ", array(':title' => $title, ':ID' => $instanceID))->fetch();
-  if ($result->count != 0) { 
+  $result = db_query("SELECT count(*) AS count FROM {laf_courses_display_config} WHERE title = :title AND instanceID != :ID ", array(':title' => $title, ':ID' => $instance_id))->fetch();
+  if ($result->count != 0) {
     form_set_error('laf_courses_display_add_title', 'Title is not unique!');
   }
 }
 
 /**
-* Submit handler for edit block form
-*/
+ * Submit handler for edit block form.
+ */
 function laf_courses_display_edit_form_submit($form, &$form_state) {
   $title = $form_state['values']['laf_courses_display_edit_title'];
   $moodle_site_url = $form_state['values']['laf_courses_display_edit_siteURL'];
   $webservice_token = $form_state['values']['laf_courses_display_edit_webservicetoken'];
   $webservice_function_name = $form_state['values']['laf_courses_display_edit_functionname'];
-  $shibIDP = $form_state['values']['laf_courses_display_edit_shibIDP'];
+  $shib_idp = $form_state['values']['laf_courses_display_edit_shibIDP'];
   $use_term_code = $form_state['values']['laf_courses_display_edit_usetermcode'];
-  $instanceID = $form_state['values']['laf_courses_display_edit_instanceID'];
+  $instance_id = $form_state['values']['laf_courses_display_edit_instanceID'];
 
   $rows = db_update('laf_courses_display_config')
   ->fields(array(
@@ -211,10 +209,10 @@ function laf_courses_display_edit_form_submit($form, &$form_state) {
     'moodle_site_url' => $moodle_site_url,
     'webservice_token' => $webservice_token,
     'webservice_function_name' => $webservice_function_name,
-    'shib_IDP' => $shibIDP,
+    'shib_IDP' => $shib_idp,
     'use_term_code' => $use_term_code,
   ))
-  ->condition('instanceID', $instanceID, '=')
+  ->condition('instanceID', $instance_id, '=')
   ->execute();
 
   $form_state['redirect'] = 'admin/config/services/laf_courses_display';
@@ -222,20 +220,20 @@ function laf_courses_display_edit_form_submit($form, &$form_state) {
 }
 
 /**
-* Base configuration page that lists current blocks
-*/
+ * Base configuration page that lists current blocks.
+ */
 function laf_courses_display_list() {
   $variables = array(
-    'header' => array(t('Title'), t('Moodle Site URL'), t('Actions'))
+    'header' => array(t('Title'), t('Moodle Site URL'), t('Actions')),
   );
 
   $block_data = db_query("SELECT instanceID, title, moodle_site_url from {laf_courses_display_config}");
   foreach ($block_data->fetchAll() as $record) {
     $title = $record->title;
     $site_url = $record->moodle_site_url;
-    $instanceID = $record->instanceID;
-    $edit_link = l('Edit', 'admin/config/services/laf_courses_display/edit/' . $instanceID);
-    $delete_link = l('Delete', 'admin/config/services/laf_courses_display/delete/' . $instanceID);
+    $instance_id = $record->instanceID;
+    $edit_link = l(t('Edit'), 'admin/config/services/laf_courses_display/edit/' . $instance_id);
+    $delete_link = l(t('Delete'), 'admin/config/services/laf_courses_display/delete/' . $instance_id);
     $actions_links = $edit_link . ' ' . $delete_link;
     $variables['rows'][] = array($title, $site_url, $actions_links);
   }
@@ -245,8 +243,8 @@ function laf_courses_display_list() {
 }
 
 /**
-* Form builder for add new courses block form
-*/
+ * Form builder for add new courses block form.
+ */
 function laf_courses_display_add_form($form, &$form_state) {
   $form['laf_courses_display_add_title'] = array(
     '#type' => 'textfield',
@@ -281,7 +279,7 @@ function laf_courses_display_add_form($form, &$form_state) {
     '#required' => TRUE,
   );
   $form['laf_courses_display_add_shibIDP'] = array(
-    '#type' => 'textfield', 
+    '#type' => 'textfield',
     '#title' => t('Shibboleth IDP String'),
     '#description' => t('The Shibboleth IDP string to use for webservice authentication.'),
     '#size' => 40,
@@ -297,40 +295,40 @@ function laf_courses_display_add_form($form, &$form_state) {
     '#type' => 'submit',
     '#value' => t('Save settings'),
   );
-  
+
   return $form;
 
 }
 
 /**
-* Validation handler for add block form
-*/
+ * Validation handler for add block form.
+ */
 function laf_courses_display_add_form_validate($form, &$form_state) {
   $title = $form_state['values']['laf_courses_display_add_title'];
   $result = db_query("SELECT count(*) AS count FROM {laf_courses_display_config} WHERE title = :title", array(':title' => $title))->fetch();
-  if ($result->count != 0) { 
+  if ($result->count != 0) {
     form_set_error('laf_courses_display_add_title', 'Title is not unique!');
   }
 }
 
 /**
-* Submit handler for add block form
-*/
+ * Submit handler for add block form.
+ */
 function laf_courses_display_add_form_submit($form, &$form_state) {
   $title = $form_state['values']['laf_courses_display_add_title'];
   $moodle_site_url = $form_state['values']['laf_courses_display_add_siteURL'];
   $webservice_token = $form_state['values']['laf_courses_display_add_webservicetoken'];
   $webservice_function_name = $form_state['values']['laf_courses_display_add_functionname'];
-  $shibIDP = $form_state['values']['laf_courses_display_add_shibIDP'];
+  $shib_idp = $form_state['values']['laf_courses_display_add_shibIDP'];
   $use_term_code = $form_state['values']['laf_courses_display_add_usetermcode'];
 
-  $instanceID = db_insert('laf_courses_display_config')
+  $instance_id = db_insert('laf_courses_display_config')
   ->fields(array(
     'title' => $title,
     'moodle_site_url' => $moodle_site_url,
     'webservice_token' => $webservice_token,
     'webservice_function_name' => $webservice_function_name,
-    'shib_IDP' => $shibIDP,
+    'shib_IDP' => $shib_idp,
     'use_term_code' => $use_term_code,
   ))
   ->execute();
@@ -339,18 +337,18 @@ function laf_courses_display_add_form_submit($form, &$form_state) {
   drupal_set_message(t('The settings have been saved.'));
 }
 
-/** 
-* Implements hook_block_info . 
-*/ 
+/**
+ * Implements hook_block_info(). 
+ */
 function laf_courses_display_block_info() {
-  $blocks = array(); 
+  $blocks = array();
 
   $block_data = db_query("SELECT instanceID, title, use_term_code from {laf_courses_display_config}");
   foreach ($block_data->fetchAll() as $record) {
     $title = $record->title;
-    $instanceID = $record->instanceID;
-    $blocks['laf_courses_display_' . $title . '_' . $instanceID] = array(
-      'info' => t("Display block for $title courses"),
+    $instance_id = $record->instanceID;
+    $blocks['laf_courses_display_' . $title . '_' . $instance_id] = array(
+      'info' => t("Display block for") . $title . t("courses"),
       'cache' => DRUPAL_NO_CACHE,
     );
   }
@@ -358,22 +356,23 @@ function laf_courses_display_block_info() {
 }
 
 /**
-* Implements hook_block_view for blocks titled 
-* 'laf_courses_display_*'
-*/
+ * Implements hook_block_view(). 
+ * 
+ * Only for blocks named 'laf_courses_display_*'.
+ */
 function laf_courses_display_block_view($block_name = '') {
   global $user;
   if (substr($block_name, 0, 20) == 'laf_courses_display_') {
-    //do display stuff
+    // Do display stuff.
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
-    $instanceID = substr($block_name, $offset + 1);
-    $result = db_query("SELECT use_term_code, moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
+    $instance_id = substr($block_name, $offset + 1);
+    $result = db_query("SELECT use_term_code, moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
     $use_term_code = $result->use_term_code;
     $site_url = $result->moodle_site_url;
-    $shibIDP = $result->shib_IDP;
+    $shib_idp = $result->shib_IDP;
     $uid = $user->uid;
-    $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instanceID))->fetch();
+    $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instance_id))->fetch();
     if ($result) {
       $time_now = time();
       $time_then = $result->timestamp;
@@ -382,44 +381,45 @@ function laf_courses_display_block_view($block_name = '') {
         $formatted = json_decode($json, TRUE);
       }
       else {
-        $request_url = format_curl_request($instanceID, $uid);
-        $formatted = call_webservice($instanceID, $uid, $request_url);
+        $request_url = format_curl_request($instance_id, $uid);
+        $formatted = call_webservice($instance_id, $uid, $request_url);
       }
     }
     else {
-      $request_url = format_curl_request($instanceID, $uid);  
-      $formatted = call_webservice($instanceID, $uid, $request_url);
+      $request_url = format_curl_request($instance_id, $uid);
+      $formatted = call_webservice($instance_id, $uid, $request_url);
     }
-    //here we need to generate default term code instead of passing 0
+    // Here we need to generate default term code instead of passing 0
     if (!empty($formatted)) {
-      $content = generate_block_content($formatted, $instanceID, $use_term_code, 0);
-    } else {
+      $content = generate_block_content($formatted, $instance_id, $use_term_code, 0);
+    }
+    else {
       $content = '';
     }
 
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
     $title = substr($block_name, 20, $offset);
-    
-    $auth_url = str_replace('http://', 'https://', $site_url);
-    //output block content
 
-    $linkout = l("See More at $title", $auth_url . '/alt?providerID=' . $shibIDP . '&target=' . $site_url, array('attributes' => array('target' => '_blank')));
+    $auth_url = str_replace('http://', 'https://', $site_url);
+
+    // Output block content.
+    $linkout = l("See More at $title", $auth_url . '/alt?providerID=' . $shib_idp . '&target=' . $site_url, array('attributes' => array('target' => '_blank')));
     $content .= "<div class='see-more'> $linkout </div>";
     $block = array(
-        'subject' => t($title),
-        'content' => $content,
-      );
+      'subject' => $title,
+      'content' => $content,
+    );
 
     return $block;
   }
 }
 
-/** 
-* Formats curl request urls
-*/
-function format_curl_request($instanceID, $uid) {
-  $result = db_query("SELECT moodle_site_url, webservice_token, webservice_function_name FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
+/**
+ * Formats curl request urls.
+ */
+function format_curl_request($instance_id, $uid) {
+  $result = db_query("SELECT moodle_site_url, webservice_token, webservice_function_name FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
   $user_mail = db_query("SELECT mail FROM {users} WHERE uid = :uid", array(':uid' => $uid))->fetch()->mail;
   $moodle_base_url = $result->moodle_site_url;
   $webservice_token = $result->webservice_token;
@@ -431,77 +431,78 @@ function format_curl_request($instanceID, $uid) {
 }
 
 /**
-* Accesses the webservice and stores results in the database, deleting old entry first
-*/
-function call_webservice($instanceID, $uid, $request_url){
-  //first we delete the existing data from the cache table
+ * Accesses the webservice and stores/replaces results in the database.
+ */
+function call_webservice($instance_id, $uid, $request_url) {
+  // First we delete the existing data from the cache table.
   $num_deleted = db_delete('laf_courses_display_cache')
-  ->condition('instanceID', $instanceID)
+  ->condition('instanceID', $instance_id)
   ->condition('uid', $uid)
   ->execute();
 
-  //now we get the data from our curl request
+  // Now we get the data from our curl request.
   $ch = curl_init($request_url);
-  
-  //Option to receive data as string directly
+
+  // Option to receive data as string directly.
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-  
-  //Option to set timeout for non-responsive requests to n seconds
+
+  // Option to set timeout for non-responsive requests to n seconds.
   curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
   $json_result = curl_exec($ch);
   curl_close($ch);
-  
-  //check for no response
+
+  // Check for no response.
   if (!$json_result) {
     return array();
   }
-  //we now format the response as an associative array to return
+  // We now format the response as an associative array to return.
   $formatted = json_decode($json_result, TRUE);
 
-  //check for moodle response error
+  // Check for moodle response error.
   if (empty($formatted) || array_key_exists('exception', $formatted)) {
     return array();
   }
 
-  //now we store it to the database
-
+  // Now we store it to the database.
   $result = db_insert('laf_courses_display_cache')
   ->fields(array(
-    'instanceID' => $instanceID,
+    'instanceID' => $instance_id,
     'uid' => $uid,
     'JSON' => $json_result,
     'timestamp' => REQUEST_TIME,
     'expire' => 0,
   ))
   ->execute();
-  
+
   return $formatted;
 }
 
 /**
-* Formats the links back to the courses in Moodle
-*/
-function create_course_link($link_info, $site_url, $shibIDP) {
-  //do some formatting stuff
+ * Formats the links back to the courses in Moodle.
+ */
+function create_course_link($link_info, $site_url, $shib_idp) {
+  // Do some formatting stuff.
   $auth_url = str_replace('http://', 'https://', $site_url);
-  $courseID = $link_info['id']; 
-  $link_url = $auth_url . '/alt?providerID=' . $shibIDP . '&target=' . $site_url . '/course/view.php?id=' . $courseID;
+  $course_id = $link_info['id'];
+  $link_url = $auth_url . '/alt?providerID=' . $shib_idp . '&target=' . $site_url . '/course/view.php?id=' . $course_id;
 
   return $link_url;
 
 }
 
 /**
-* Parses term codes
-*/
+ * Parses term codes.
+ */
 function parse_term_code($code) {
   $year = substr($code, 0, 4);
   $term = substr($code, 4, 2);
-  $year = $year + 1; //year codes for terms don't display intuitively
+  // Year codes for terms don't display intuitively.
+  $year = $year + 1;
 
   switch ($term) {
     case '10':
-      $year = $year - 1; //except for the fall
+      // Except for the fall.
+      $year = $year - 1;
       $term = 'Fall';
       break;
 
@@ -509,7 +510,7 @@ function parse_term_code($code) {
       $term = 'Interim';
       break;
 
-    case '30': 
+    case '30':
       $term = 'Spring';
       break;
 
@@ -529,17 +530,17 @@ function parse_term_code($code) {
 }
 
 /**
-* Comparison function for sorting links arrays
-*/
+ * Comparison function for sorting links arrays.
+ */
 function compare_links_alphabetical($a, $b) {
-  //we are given two arrays, and want to compare their 'title' fields
+  // We are given two arrays, and want to compare their 'title' fields.
   return strnatcasecmp($a['title'], $b['title']);
 }
 
 /**
-* Generate content to display in block
-*/
-function generate_block_content($formatted, $instanceID, $use_term_code, $selected_term) {
+ * Generate content to display in block.
+ */
+function generate_block_content($formatted, $instance_id, $use_term_code, $selected_term) {
   drupal_add_js('misc/ajax.js');
   drupal_add_library('system', 'drupal.ajax');
   drupal_add_library('system', 'jquery.form');
@@ -547,34 +548,50 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
   $js = "jQuery(document).ready(function(){";
   $js .= "jQuery('#dropdown').css('display', 'block');";
   $js .= "});";
-  
+
   drupal_add_js($js, 'inline');
 
-  $content = ''; //renderable output
-  $variables = array(); //for default content
-  $inactive = array(); //for inactive content
-  $links = array(); //for all content 
-  $drop_links = array(); //for course terms 
-  $i = 0; // for looping through $links
-  $j = 0; //for looping through $drop_links
-  $drop_down_flag = 0; //determine whether to render drop-down menu
-  if (!$selected_term) { 
+  // Renderable output.
+  $content = '';
+
+  // For default content.
+  $variables = array();
+
+  // For inactive content.
+  $inactive = array();
+
+  // For all content.
+  $links = array();
+
+  // For course terms.
+  $drop_links = array();
+
+  // For looping through $links.
+  $i = 0;
+
+  // For looping through $drop_links.
+  $j = 0;
+
+  // Determine whether to render drop-down menu.
+  $drop_down_flag = 0;
+
+  if (!$selected_term) {
     $drop_down_flag = 1;
   }
-  // get link generation information from database
-  $result = db_query("SELECT moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instanceID))->fetch();
+  // Get link generation information from database.
+  $result = db_query("SELECT moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
   $site_url = $result->moodle_site_url;
-  $shibIDP = $result->shib_IDP;
+  $shib_idp = $result->shib_IDP;
 
   foreach ($formatted as $link_info) {
-    $links[$i]['href'] = create_course_link($link_info, $site_url, $shibIDP);
+    $links[$i]['href'] = create_course_link($link_info, $site_url, $shib_idp);
     $links[$i]['title'] = html_entity_decode($link_info['fullname'], ENT_QUOTES);
     $links[$i]['attributes'] = array('target' => '_blank');
-    // if there is a term field specified, generate the link string
+    // If there is a term field specified, generate the link string.
     if (!empty($link_info['term'])) {
-      $links[$i]['term'] = $link_info['term']; //store term for 'safekeeping' now
+      $links[$i]['term'] = $link_info['term'];
       $k = 1;
-      $test_link =  parse_term_code($link_info['term']);
+      $test_link = parse_term_code($link_info['term']);
       foreach ($drop_links as $comp_link) {
         $k = 1;
         if (strcmp($test_link, $comp_link['title']) == 0) {
@@ -582,13 +599,13 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
           break;
         }
       }
-      if ($k == 1){
+      if ($k == 1) {
         $drop_links[$j]['title'] = $test_link;
         $drop_links[$j]['code'] = $link_info['term'];
         $j = $j + 1;
-       }
+      }
     }
-    // TODO: Fix data problem when only visible course has no term code. Hack fix on line 601
+    // TODO: Fix data problem when only visible course has no term code. Hack fix on line 625
     if ($link_info['visible'] == 1) {
       $variables['links'][] = $links[$i];
     }
@@ -598,23 +615,23 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
     $i = $i + 1;
   }
   if ($check = !empty($variables)) {
-    if ($use_term_code){
+    if ($use_term_code) {
       $variables['links'] = term_select($variables['links'], $selected_term, $drop_links);
       $default_term = array_pop($variables['links']);
-    } 
+    }
     uasort($variables['links'], 'compare_links_alphabetical');
     $variables['attributes'] = array();
     if ($use_term_code == 1 && $drop_down_flag == 1 && !empty($drop_links)) {
-      $content .= drupal_render(drupal_get_form('get_term_form', $drop_links, $default_term, $instanceID));
+      $content .= drupal_render(drupal_get_form('get_term_form', $drop_links, $default_term, $instance_id));
     }
-    $content .= "<div id='ajax_content_response_$instanceID' class='item-list'>";
+    $content .= "<div id='ajax_content_response_$instance_id' class='item-list'>";
     if ($use_term_code) {
       $term_display = parse_term_code($default_term);
     }
     $content .= theme('links', $variables);
   }
   if (!empty($inactive)) {
-    if ($use_term_code){
+    if ($use_term_code) {
       $inactive['links'] = term_select($inactive['links'], $selected_term, $drop_links);
       $default_term = array_pop($inactive['links']);
     }
@@ -623,10 +640,15 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
     $inactive_content = theme('links', $inactive);
   }
 
-  //collapsible div
+  // Collapsible div.
   if (!empty($inactive['links'])) {
     $handle = t('Inactive Courses');
-    $content .= theme('ctools_collapsible', array('handle' => $handle, 'content' => $inactive_content, 'collapsed' => TRUE));
+    $content .= theme('ctools_collapsible',
+      array(
+        'handle' => $handle,
+        'content' => $inactive_content,
+        'collapsed' => TRUE,
+      ));
   }
   if ($check) {
     $content .= "</div>";
@@ -636,8 +658,8 @@ function generate_block_content($formatted, $instanceID, $use_term_code, $select
 
 
 /**
-* Ajax callback function
-*/
+ * Ajax callback function.
+ */
 function ajax_callback_link($form, $form_state) {
   $term_code = $form_state['values']['term-form'];
   $output = ajax_get_content($term_code);
@@ -645,32 +667,32 @@ function ajax_callback_link($form, $form_state) {
 }
 
 /**
-* Helper function for ajax callback to get content
-*/
-function ajax_get_content($term_code){
+ * Helper function for ajax callback to get content.
+ */
+function ajax_get_content($term_code) {
   global $user;
   $uid = $user->uid;
   $offset = strrpos($term_code, '_');
-  $instanceID = substr($term_code, $offset + 1);
+  $instance_id = substr($term_code, $offset + 1);
   $term_code = substr($term_code, 0, $offset);
-  $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instanceID))->fetch();
+  $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instance_id))->fetch();
   if ($result) {
     $json = $result->JSON;
     $formatted = json_decode($json, TRUE);
-    $content = generate_block_content($formatted, $instanceID, 1, $term_code);
+    $content = generate_block_content($formatted, $instance_id, 1, $term_code);
     return $content;
-  } 
+  }
   else {
     return 'An error has occured. Please reload the page.';
   }
 }
 
 /**
-* Strips down to just the links for the selected term
-*/
+ * Strips down to just the links for the selected term.
+ */
 function term_select($array, $term_code, $term_array) {
   if ($term_code == 0) {
-    //figure out default term here
+    // Figure out default term here.
     $terms = array();
     $current_term = calculate_term();
     foreach ($term_array as $term) {
@@ -678,14 +700,14 @@ function term_select($array, $term_code, $term_array) {
     }
     if (in_array($current_term, $terms)) {
       $term_code = $current_term;
-    } 
+    }
     else {
       $terms[] = $current_term;
       sort($terms);
-      if ($terms[count($terms) - 1] == $current_term){
+      if ($terms[count($terms) - 1] == $current_term) {
         if (count($terms) != 1) {
           $term_code = $terms[count($terms) - 2];
-        } 
+        }
         else {
           $term_code = $current_term;
         }
@@ -694,8 +716,8 @@ function term_select($array, $term_code, $term_array) {
         $term_code = $terms[array_search($current_term, $terms) + 1];
       }
     }
-  }  
-   
+  }
+
   $return_array = array();
   foreach ($array as $element) {
     if (isset($element['term']) && $element['term'] == $term_code) {
@@ -707,48 +729,54 @@ function term_select($array, $term_code, $term_array) {
 }
 
 /**
-* Calculates current term
-*/
+ * Calculates current term.
+ */
 function calculate_term() {
   $time = date('Ymd');
-  $year = substr($time, 0, 4); //note, this code fails in A.D 10000 
-  $year = $year - 1; //term codes are based on academic year...
+  $year = substr($time, 0, 4);
+
+  // Term codes are based on academic year.
+  $year = $year - 1;
+
   $compare = substr($time, 4);
   if ($compare < 0122) {
     $term = $year . '20';
-  } 
+  }
   elseif ($compare < 0522) {
     $term = $year . '30';
-  } 
-    elseif ($compare < 0701) {
-  $term = $year . '40';
-  } 
+  }
+  elseif ($compare < 0701) {
+    $term = $year . '40';
+  }
   elseif ($compare < 0815) {
     $term = $year . '50';
-  } 
+  }
   else {
-    $year = $year + 1; //...so we adjust everything except the fall
+    // So we adjust everything except the fall.
+    $year = $year + 1;
     $term = $year . '10';
   }
   return $term;
 }
 
-function get_term_form($form, &$form_state, $links, $default, $instanceID) {
+/**
+ * Returns the drop-down term menu.
+ */
+function get_term_form($form, &$form_state, $links, $default, $instance_id) {
   $options = array();
   foreach ($links as $link) {
-    $options[$link['code'] . "_" . $instanceID] = $link['title'];
+    $options[$link['code'] . "_" . $instance_id] = $link['title'];
   }
-  $default = $default . '_' . $instanceID;
+  $default = $default . '_' . $instance_id;
   $form['term-form'] = array(
     '#type' => 'select',
     '#options' => $options,
     '#default_value' => $default,
     '#ajax' => array(
       'callback' => 'ajax_callback_link',
-      'wrapper' => 'ajax_content_response_' . $instanceID,
+      'wrapper' => 'ajax_content_response_' . $instance_id,
     ),
   );
 
   return $form;
 }
-
