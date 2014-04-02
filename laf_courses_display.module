@@ -427,7 +427,6 @@ function format_curl_request($instanceID, $uid) {
   $params = array('username' => $user_mail);
 
   $url = $moodle_base_url . '/webservice/rest/server.php?wstoken=' . $webservice_token . '&wsfunction=' . $webservice_function_name . '&moodlewsrestformat=json&' . http_build_query($params);
-  watchdog('debug', $url);
   return $url;
 }
 
