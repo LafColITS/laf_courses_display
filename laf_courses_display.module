@@ -739,16 +739,16 @@ function calculate_term() {
   $year = $year - 1;
 
   $compare = substr($time, 4);
-  if ($compare < 0122) {
+  if ((int)$compare < 122) {
     $term = $year . '20';
   }
-  elseif ($compare < 0522) {
+  elseif ((int)$compare < 522) {
     $term = $year . '30';
-  }
-  elseif ($compare < 0701) {
+  } 
+  elseif ((int)$compare < 701) {
     $term = $year . '40';
-  }
-  elseif ($compare < 0815) {
+  } 
+  elseif ((int)$compare < 815) {
     $term = $year . '50';
   }
   else {
