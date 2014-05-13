@@ -19,13 +19,6 @@ function laf_courses_display_help($path, $arg) {
 }
 
 /**
- * Implements hook_flush_caches().
- */
-function laf_courses_display_flush_caches() {
-  return array('laf_courses_display_cache');
-}
-
-/**
  * Implements hook_menu().
  */
 function laf_courses_display_menu() {
@@ -71,10 +64,11 @@ function laf_courses_display_menu() {
  * Form for deleting an existing block.
  */
 function laf_courses_display_delete_form($form, &$form_state, $instance_id) {
-  $result = db_query('SELECT title FROM {laf_courses_display_config} WHERE instanceID = :ID', array(':ID' => $instance_id))->fetch();
+  $result = db_query('SELECT settings FROM {laf_courses_display_config} WHERE instanceID = :ID', array(':ID' => $instance_id))->fetch();
+  $settings = @unserialize($result->settings);
   $form['laf_courses_display_delete_confirm'] = array(
     '#type' => 'checkbox',
-    '#title' => 'Delete ' . $result->title . '?',
+    '#title' => 'Delete ' . $settings['title'] . '?',
     '#description' => 'WARNING: This action cannot be undone!',
   );
   $form['laf_courses_display_delete_instanceID'] = array(
@@ -83,7 +77,7 @@ function laf_courses_display_delete_form($form, &$form_state, $instance_id) {
   );
   $form['laf_courses_display_delete_title'] = array(
     '#type' => 'value',
-    '#value' => $result->title,
+    '#value' => $settings['title'],
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -114,59 +108,61 @@ function laf_courses_display_delete_form_submit($form, &$form_state) {
  */
 function laf_courses_display_edit_form($form, &$form_state, $instance_id) {
   $result = db_query("SELECT * FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
-
-  $form['laf_courses_display_edit_title'] = array(
+  $settings = @unserialize($result->settings);
+  $classfile = $settings['controllerclass'];
+  require_once(drupal_get_path('module', 'laf_courses_display') . "/classes/CourseBlockInterface.php");
+  require_once($classfile);
+  $class = substr($classfile, 0, -4);
+  $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Courses block title'),
     '#description' => t('Title of the block. This field is unique in the database.'),
     '#size' => 40,
     '#maxlength' => 255,
     '#required' => TRUE,
-    '#default_value' => $result->title,
+    '#default_value' => $settings['title'],
   );
-  $form['laf_courses_display_edit_siteURL'] = array(
+  $form['siteURL'] = array(
     '#type' => 'textfield',
     '#title' => t('Base URL'),
     '#description' => t('The base URL of the Moodle instance for this block.'),
     '#size' => 40,
     '#maxlength' => 255,
     '#required' => TRUE,
-    '#default_value' => $result->moodle_site_url,
+    '#default_value' => $settings['siteURL'],
   );
-  $form['laf_courses_display_edit_webservicetoken'] = array(
+  $form['webservicetoken'] = array(
     '#type' => 'textfield',
     '#title' => t('Webservice Token'),
     '#description' => t('The token used for authentication to the webservice.'),
     '#size' => 40,
     '#maxlength' => 32,
     '#required' => TRUE,
-    '#default_value' => $result->webservice_token,
+    '#default_value' => $settings['webservicetoken'],
   );
-  $form['laf_courses_display_edit_functionname'] = array(
+  $form['functionname'] = array(
     '#type' => 'textfield',
     '#title' => t('Function Name'),
     '#description' => t('The name of the Moodle function to call via the webservice.'),
     '#size' => 40,
     '#maxlength' => 255,
     '#required' => TRUE,
-    '#default_value' => $result->webservice_function_name,
+    '#default_value' => $settings['functionname'],
   );
-  $form['laf_courses_display_edit_shibIDP'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Shibboleth IDP String'),
-    '#description' => t('The Shibboleth IDP string to use for webservice authentication.'),
-    '#size' => 40,
-    '#maxlength' => 255,
-    '#required' => TRUE,
-    '#default_value' => $result->shib_IDP,
-  );
-  $form['laf_courses_display_edit_usetermcode'] = array(
+  $form['usetermcode'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use term code in display'),
     '#description' => t('Indicates whether or not to use a term drop down box in the block display.'),
-    '#default_value' => $result->use_term_code,
+    '#default_value' => $settings['usetermcode'],
   );
-  $form['laf_courses_display_edit_instanceID'] = array(
+  $additionalSettings = $class::additionalSettings();
+  foreach ($additionalSettings as $element) {
+    if (!isset($element['#default_value']) && isset($settings[$element])) {
+      $element['#default_value'] = $settings[$element];
+    }
+  }
+  $form += $additionalSettings;
+  $form['instanceID'] = array(
     '#type' => 'value',
     '#value' => $instance_id,
   );
@@ -180,37 +176,19 @@ function laf_courses_display_edit_form($form, &$form_state, $instance_id) {
 }
 
 /**
- * Validation handler for edit block form.
- */
-function laf_courses_display_edit_form_validate($form, &$form_state) {
-  $instance_id = $form_state['values']['laf_courses_display_edit_instanceID'];
-  $title = $form_state['values']['laf_courses_display_edit_title'];
-  $result = db_query("SELECT count(*) AS count FROM {laf_courses_display_config} WHERE title = :title AND instanceID != :ID ", array(':title' => $title, ':ID' => $instance_id))->fetch();
-  if ($result->count != 0) {
-    form_set_error('laf_courses_display_add_title', 'Title is not unique!');
-  }
-}
-
-/**
  * Submit handler for edit block form.
  */
 function laf_courses_display_edit_form_submit($form, &$form_state) {
-  $title = $form_state['values']['laf_courses_display_edit_title'];
-  $moodle_site_url = $form_state['values']['laf_courses_display_edit_siteURL'];
-  $webservice_token = $form_state['values']['laf_courses_display_edit_webservicetoken'];
-  $webservice_function_name = $form_state['values']['laf_courses_display_edit_functionname'];
-  $shib_idp = $form_state['values']['laf_courses_display_edit_shibIDP'];
-  $use_term_code = $form_state['values']['laf_courses_display_edit_usetermcode'];
+  $settings = array();
+  foreach ($form_state['values'] as $key => $value) {
+    $settings[$key] = $value;
+  }
+  $serialized = serialize($settings);
   $instance_id = $form_state['values']['laf_courses_display_edit_instanceID'];
 
   $rows = db_update('laf_courses_display_config')
   ->fields(array(
-    'title' => $title,
-    'moodle_site_url' => $moodle_site_url,
-    'webservice_token' => $webservice_token,
-    'webservice_function_name' => $webservice_function_name,
-    'shib_IDP' => $shib_idp,
-    'use_term_code' => $use_term_code,
+      'settings' => $serialized,
   ))
   ->condition('instanceID', $instance_id, '=')
   ->execute();
@@ -227,10 +205,11 @@ function laf_courses_display_list() {
     'header' => array(t('Title'), t('Moodle Site URL'), t('Actions')),
   );
 
-  $block_data = db_query("SELECT instanceID, title, moodle_site_url from {laf_courses_display_config}");
+  $block_data = db_query("SELECT instanceID, settings from {laf_courses_display_config}");
   foreach ($block_data->fetchAll() as $record) {
-    $title = $record->title;
-    $site_url = $record->moodle_site_url;
+    $settings = @unserialize($record->settings);
+    $title = $settings['title'];
+    $site_url = $settings['siteURL'];
     $instance_id = $record->instanceID;
     $edit_link = l(t('Edit'), 'admin/config/services/laf_courses_display/edit/' . $instance_id);
     $delete_link = l(t('Delete'), 'admin/config/services/laf_courses_display/delete/' . $instance_id);
@@ -246,7 +225,20 @@ function laf_courses_display_list() {
  * Form builder for add new courses block form.
  */
 function laf_courses_display_add_form($form, &$form_state) {
-  $form['laf_courses_display_add_title'] = array(
+  require_once(drupal_get_path('module', 'laf_courses_display') . "/classes/CourseBlockInterface.php");
+  $classes = module_invoke_all('laf_courses_display_block_class');
+  $form['controllerclass'] = array(
+    '#type' => 'select',
+    '#title' => t('Controlling Class'),
+    '#description' => t('A class implementing the CourseBlockInterface to drive term-code specific functionality. A module can implement hook_laf_courses_display_block_class to declare a file path (containing a class with name equal to the filename minus the .php extension) which will appear as an option.'),
+    '#required' => TRUE,
+    '#options' => $classes,
+    '#ajax' => array(
+      'callback' => 'laf_courses_display_controllerclass_callback',
+      'wrapper' => 'additionalsettings',
+    ),
+  );
+  $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Courses block title'),
     '#description' => t('Title of the block. This field is unique in the database.'),
@@ -254,7 +246,7 @@ function laf_courses_display_add_form($form, &$form_state) {
     '#maxlength' => 255,
     '#required' => TRUE,
   );
-  $form['laf_courses_display_add_siteURL'] = array(
+  $form['siteURL'] = array(
     '#type' => 'textfield',
     '#title' => t('Base URL'),
     '#description' => t('The base URL of the Moodle instance for this block.'),
@@ -262,7 +254,7 @@ function laf_courses_display_add_form($form, &$form_state) {
     '#maxlength' => 255,
     '#required' => TRUE,
   );
-  $form['laf_courses_display_add_webservicetoken'] = array(
+  $form['webservicetoken'] = array(
     '#type' => 'textfield',
     '#title' => t('Webservice Token'),
     '#description' => t('The token used for authentication to the webservice.'),
@@ -270,7 +262,7 @@ function laf_courses_display_add_form($form, &$form_state) {
     '#maxlength' => 32,
     '#required' => TRUE,
   );
-  $form['laf_courses_display_add_functionname'] = array(
+  $form['functionname'] = array(
     '#type' => 'textfield',
     '#title' => t('Function Name'),
     '#description' => t('The name of the Moodle function to call via the webservice.'),
@@ -278,19 +270,18 @@ function laf_courses_display_add_form($form, &$form_state) {
     '#maxlength' => 255,
     '#required' => TRUE,
   );
-  $form['laf_courses_display_add_shibIDP'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Shibboleth IDP String'),
-    '#description' => t('The Shibboleth IDP string to use for webservice authentication.'),
-    '#size' => 40,
-    '#maxlength' => 255,
-    '#required' => TRUE,
-  );
-  $form['laf_courses_display_add_usetermcode'] = array(
+  $form['usetermcode'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use term code in display'),
     '#description' => t('Indicates whether or not to use a term drop down box in the block display.'),
   );
+  $form['additionalsettings'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Additional Settings',
+    '#prefix' => '<div id="additionalsettings">',
+    '#suffix' => '</div>',
+  );
+
   $form['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save settings'),
@@ -301,35 +292,27 @@ function laf_courses_display_add_form($form, &$form_state) {
 }
 
 /**
- * Validation handler for add block form.
+ * Ajax callback for controller class options.
  */
-function laf_courses_display_add_form_validate($form, &$form_state) {
-  $title = $form_state['values']['laf_courses_display_add_title'];
-  $result = db_query("SELECT count(*) AS count FROM {laf_courses_display_config} WHERE title = :title", array(':title' => $title))->fetch();
-  if ($result->count != 0) {
-    form_set_error('laf_courses_display_add_title', 'Title is not unique!');
-  }
+function laf_courses_display_controllerclass_callback($form, &$form_state) {
+  $classfile = $form_state['values']['controllerclass'];
+  require_once($classfile);
+  $class = substr($classfile, 0, -4);
+  return $class::additionalSettings();
 }
 
 /**
  * Submit handler for add block form.
  */
-function laf_courses_display_add_form_submit($form, &$form_state) {
-  $title = $form_state['values']['laf_courses_display_add_title'];
-  $moodle_site_url = $form_state['values']['laf_courses_display_add_siteURL'];
-  $webservice_token = $form_state['values']['laf_courses_display_add_webservicetoken'];
-  $webservice_function_name = $form_state['values']['laf_courses_display_add_functionname'];
-  $shib_idp = $form_state['values']['laf_courses_display_add_shibIDP'];
-  $use_term_code = $form_state['values']['laf_courses_display_add_usetermcode'];
-
+function laf_courses_display_add_form_submit($form, $form_state) {
+  $settings = array();
+  foreach ($form_state['values'] as $key => $value) {
+    $settings[$key] = $value;
+  }
+  $serialized = serialize($settings);
   $instance_id = db_insert('laf_courses_display_config')
   ->fields(array(
-    'title' => $title,
-    'moodle_site_url' => $moodle_site_url,
-    'webservice_token' => $webservice_token,
-    'webservice_function_name' => $webservice_function_name,
-    'shib_IDP' => $shib_idp,
-    'use_term_code' => $use_term_code,
+    'settings' => $serialized,
   ))
   ->execute();
 
@@ -343,9 +326,10 @@ function laf_courses_display_add_form_submit($form, &$form_state) {
 function laf_courses_display_block_info() {
   $blocks = array();
 
-  $block_data = db_query("SELECT instanceID, title, use_term_code from {laf_courses_display_config}");
+  $block_data = db_query("SELECT instanceID, settings from {laf_courses_display_config}");
   foreach ($block_data->fetchAll() as $record) {
-    $title = $record->title;
+    $settings = @unserialize($record->settings);
+    $title = $settings['title'];
     $instance_id = $record->instanceID;
     $blocks['laf_courses_display_' . $title . '_' . $instance_id] = array(
       'info' => t("Display block for") . $title . t("courses"),
@@ -362,33 +346,25 @@ function laf_courses_display_block_info() {
  */
 function laf_courses_display_block_view($block_name = '') {
   global $user;
+
   if (substr($block_name, 0, 20) == 'laf_courses_display_') {
     // Do display stuff.
+    require_once(drupal_get_path('module', 'laf_courses_display') . '/classes/ContentGenerator.php');
+    
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
     $instance_id = substr($block_name, $offset + 1);
-    $result = db_query("SELECT use_term_code, moodle_site_url, shib_IDP FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
-    $use_term_code = $result->use_term_code;
-    $site_url = $result->moodle_site_url;
-    $shib_idp = $result->shib_IDP;
+    $result = db_query("SELECT settings FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
+    $settings = @unserialize($result->settings);
+    $use_term_code = $settings['usetermcode'];
+    $site_url = $settings['siteURL'];
+    //$shib_idp = $result->shib_IDP;
     $uid = $user->uid;
-    $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instance_id))->fetch();
-    if ($result) {
-      $time_now = time();
-      $time_then = $result->timestamp;
-      if (($time_now - $time_then) < 86400) {
-        $json = $result->JSON;
-        $formatted = json_decode($json, TRUE);
-      }
-      else {
-        $request_url = format_curl_request($instance_id, $uid);
-        $formatted = call_webservice($instance_id, $uid, $request_url);
-      }
-    }
-    else {
-      $request_url = format_curl_request($instance_id, $uid);
-      $formatted = call_webservice($instance_id, $uid, $request_url);
-    }
+    $user_mail = db_query("SELECT mail FROM {users} WHERE uid = :uid", array(':uid' => $uid))->fetch()->mail;
+    
+    $request_url = ContentGenerator::formatCurlRequest($instance_id, $user_mail, $settings);
+    $formatted = ContentGenerator::getData($instance_id, $uid, $request_url);
+    
     // Here we need to generate default term code instead of passing 0
     if (!empty($formatted)) {
       $content = generate_block_content($formatted, $instance_id, $use_term_code, 0);
@@ -396,14 +372,13 @@ function laf_courses_display_block_view($block_name = '') {
     else {
       $content = '';
     }
-
-    $offset = strrpos($block_name, '_');
-    $offset = $offset - strlen($block_name);
-    $title = substr($block_name, 20, $offset);
+    
+    $title = $settings['title'];
 
     $auth_url = str_replace('http://', 'https://', $site_url);
 
     // Output block content.
+    // Generalization needed here.
     $linkout = l("See More at $title", $auth_url . '/alt?providerID=' . $shib_idp . '&target=' . $site_url, array('attributes' => array('target' => '_blank')));
     $content .= "<div class='see-more'> $linkout </div>";
     $block = array(
@@ -415,119 +390,7 @@ function laf_courses_display_block_view($block_name = '') {
   }
 }
 
-/**
- * Formats curl request urls.
- */
-function format_curl_request($instance_id, $uid) {
-  $result = db_query("SELECT moodle_site_url, webservice_token, webservice_function_name FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
-  $user_mail = db_query("SELECT mail FROM {users} WHERE uid = :uid", array(':uid' => $uid))->fetch()->mail;
-  $moodle_base_url = $result->moodle_site_url;
-  $webservice_token = $result->webservice_token;
-  $webservice_function_name = $result->webservice_function_name;
-  $params = array('username' => $user_mail);
 
-  $url = $moodle_base_url . '/webservice/rest/server.php?wstoken=' . $webservice_token . '&wsfunction=' . $webservice_function_name . '&moodlewsrestformat=json&' . http_build_query($params);
-  return $url;
-}
-
-/**
- * Accesses the webservice and stores/replaces results in the database.
- */
-function call_webservice($instance_id, $uid, $request_url) {
-  // First we delete the existing data from the cache table.
-  $num_deleted = db_delete('laf_courses_display_cache')
-  ->condition('instanceID', $instance_id)
-  ->condition('uid', $uid)
-  ->execute();
-
-  // Now we get the data from our curl request.
-  $ch = curl_init($request_url);
-
-  // Option to receive data as string directly.
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-
-  // Option to set timeout for non-responsive requests to n seconds.
-  curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
-  $json_result = curl_exec($ch);
-  curl_close($ch);
-
-  // Check for no response.
-  if (!$json_result) {
-    return array();
-  }
-  // We now format the response as an associative array to return.
-  $formatted = json_decode($json_result, TRUE);
-
-  // Check for moodle response error.
-  if (empty($formatted) || array_key_exists('exception', $formatted)) {
-    return array();
-  }
-
-  // Now we store it to the database.
-  $result = db_insert('laf_courses_display_cache')
-  ->fields(array(
-    'instanceID' => $instance_id,
-    'uid' => $uid,
-    'JSON' => $json_result,
-    'timestamp' => REQUEST_TIME,
-    'expire' => 0,
-  ))
-  ->execute();
-
-  return $formatted;
-}
-
-/**
- * Formats the links back to the courses in Moodle.
- */
-function create_course_link($link_info, $site_url, $shib_idp) {
-  // Do some formatting stuff.
-  $auth_url = str_replace('http://', 'https://', $site_url);
-  $course_id = $link_info['id'];
-  $link_url = $auth_url . '/alt?providerID=' . $shib_idp . '&target=' . $site_url . '/course/view.php?id=' . $course_id;
-
-  return $link_url;
-
-}
-
-/**
- * Parses term codes.
- */
-function parse_term_code($code) {
-  $year = substr($code, 0, 4);
-  $term = substr($code, 4, 2);
-  // Year codes for terms don't display intuitively.
-  $year = $year + 1;
-
-  switch ($term) {
-    case '10':
-      // Except for the fall.
-      $year = $year - 1;
-      $term = 'Fall';
-      break;
-
-    case '20':
-      $term = 'Interim';
-      break;
-
-    case '30':
-      $term = 'Spring';
-      break;
-
-    case '40':
-      $term = 'Summer I';
-      break;
-
-    case '50':
-      $term = 'Summer II';
-      break;
-
-  }
-
-  $term = $term . ' ' . $year;
-
-  return $term;
-}
 
 /**
  * Comparison function for sorting links arrays.
@@ -675,10 +538,9 @@ function ajax_get_content($term_code) {
   $offset = strrpos($term_code, '_');
   $instance_id = substr($term_code, $offset + 1);
   $term_code = substr($term_code, 0, $offset);
-  $result = db_query("SELECT * FROM {laf_courses_display_cache} WHERE uid = :uid AND instanceID = :ID", array(':uid' => $uid, ':ID' => $instance_id))->fetch();
+  $result = cache_get("laf_courses_display:$instance_id:$uid", 'cache');
   if ($result) {
-    $json = $result->JSON;
-    $formatted = json_decode($json, TRUE);
+    $formatted = $result->data;
     $content = generate_block_content($formatted, $instance_id, 1, $term_code);
     return $content;
   }
@@ -729,37 +591,6 @@ function term_select($array, $term_code, $term_array) {
 }
 
 /**
- * Calculates current term.
- */
-function calculate_term() {
-  $time = date('Ymd');
-  $year = substr($time, 0, 4);
-
-  // Term codes are based on academic year.
-  $year = $year - 1;
-
-  $compare = substr($time, 4);
-  if ((int)$compare < 122) {
-    $term = $year . '20';
-  }
-  elseif ((int)$compare < 522) {
-    $term = $year . '30';
-  } 
-  elseif ((int)$compare < 701) {
-    $term = $year . '40';
-  } 
-  elseif ((int)$compare < 815) {
-    $term = $year . '50';
-  }
-  else {
-    // So we adjust everything except the fall.
-    $year = $year + 1;
-    $term = $year . '10';
-  }
-  return $term;
-}
-
-/**
  * Returns the drop-down term menu.
  */
 function get_term_form($form, &$form_state, $links, $default, $instance_id) {
@@ -779,4 +610,11 @@ function get_term_form($form, &$form_state, $links, $default, $instance_id) {
   );
 
   return $form;
+}
+
+/**
+ * Implements hook_laf_courses_display_block_class.
+ */
+function laf_courses_display_laf_courses_display_block_class() {
+  return drupal_get_path('module', 'laf_courses_display') . "/classes/LafayetteCourseBlock.php");
 }
