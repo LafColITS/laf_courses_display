@@ -20,10 +20,10 @@ function laf_courses_display_schema() {
       ),
       'settings' => array(
         'description' => 'A serialized array of settings.',
-        'type' => 'longtext',
-        'not null' => TRUE,
-        'default' => '',
+        'type' => 'text',
+        'size' => 'big',
       ),
+    ),
     'unique keys' => array(
       'instanceID' => array('instanceID'),
     ),
