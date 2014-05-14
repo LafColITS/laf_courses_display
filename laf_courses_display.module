@@ -110,9 +110,6 @@ function laf_courses_display_edit_form($form, &$form_state, $instance_id) {
   $result = db_query("SELECT * FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
   $settings = @unserialize($result->settings);
   $classfile = $settings['controllerclass'];
-  require_once(drupal_get_path('module', 'laf_courses_display') . "/lib/CourseBlockInterface.php");
-  require_once(drupal_get_path('module', 'laf_courses_display') . "/lib/ContentGenerator.php");
-  require_once($classfile);
   $class = substr($classfile, strrpos($classfile, '/') + 1, -4);
   $form['title'] = array(
     '#type' => 'textfield',
@@ -226,12 +223,10 @@ function laf_courses_display_list() {
  * Form builder for add new courses block form.
  */
 function laf_courses_display_add_form($form, &$form_state) {
-  require_once(drupal_get_path('module', 'laf_courses_display') . "/lib/CourseBlockInterface.php");
-  require_once(drupal_get_path('module', 'laf_courses_display') . "/lib/ContentGenerator.php");
   $classes = module_invoke_all('laf_courses_display_block_class');
   $options = array();
   foreach ($classes as $class) {
-    $options[$class] = substr($class, strrpos($class, '/') + 1, -4);
+    $options[$class] = $class;
   }
   $form['#prefix'] = '<div id="courseBlockForm">';
   $form['#suffix'] = '</div>';
@@ -291,9 +286,7 @@ function laf_courses_display_add_form($form, &$form_state) {
   );
 
   if (!empty($form_state['values']['controllerclass'])) {
-    $classfile = $form_state['values']['controllerclass'];
-    require_once($classfile);
-    $class = substr($classfile, strrpos($classfile, '/') + 1, -4);
+    $class = $form_state['values']['controllerclass'];
     $courseBlock = new $class;
     $form += ContentGenerator::call($courseBlock, 'additionalSettings');
   }
@@ -347,8 +340,8 @@ function laf_courses_display_block_info() {
     $settings = @unserialize($record->settings);
     $title = $settings['title'];
     $instance_id = $record->instanceID;
-    $blocks['laf_courses_display_' . $title . '_' . $instance_id] = array(
-      'info' => t("Display block for") . $title . t("courses"),
+    $blocks['laf_courses_display_' . $instance_id] = array(
+      'info' => t("Display block for ") . $title . t(" courses"),
       'cache' => DRUPAL_NO_CACHE,
     );
   }
@@ -365,7 +358,6 @@ function laf_courses_display_block_view($block_name = '') {
 
   if (substr($block_name, 0, 20) == 'laf_courses_display_') {
     // Do display stuff.
-    require_once(drupal_get_path('module', 'laf_courses_display') . '/lib/ContentGenerator.php');
 
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
@@ -374,9 +366,7 @@ function laf_courses_display_block_view($block_name = '') {
     $settings = @unserialize($result->settings);
     $uid = $user->uid;
     $user_mail = db_query("SELECT mail FROM {users} WHERE uid = :uid", array(':uid' => $uid))->fetch()->mail;
-    $classfile = $settings['controllerclass'];
-    require_once($classfile);
-    $class = substr($classfile, strrpos($classfile, '/') + 1, -4);
+    $class = $settings['controllerclass'];
     $courseBlock = new $class;
 
     $request_url = ContentGenerator::formatCurlRequest($instance_id, $user_mail, $settings);
@@ -393,7 +383,7 @@ function laf_courses_display_block_view($block_name = '') {
     $title = $settings['title'];
 
     // Output block content.
-    $linkout = l("See More at $title", ContentGenerator::call($courseBlock, 'createSiteLink', $site_url, $settings), array('attributes' => array('target' => '_blank')));
+    $linkout = l("See More at $title", ContentGenerator::call($courseBlock, 'createSiteLink', $settings), array('attributes' => array('target' => '_blank')));
     $content .= "<div class='see-more'> $linkout </div>";
     $block = array(
       'subject' => $title,
@@ -419,14 +409,18 @@ function ajax_callback_link($form, $form_state) {
 function ajax_get_content($term_code) {
   global $user;
   $uid = $user->uid;
-  require_once(drupal_get_path('module', 'laf_courses_display') . "/lib/ContentGenerator.php");
   $offset = strrpos($term_code, '_');
   $instance_id = substr($term_code, $offset + 1);
   $term_code = substr($term_code, 0, $offset);
-  $result = cache_get("laf_courses_display:$instance_id:$uid", 'cache');
+  $data = cache_get("laf_courses_display:$instance_id:$uid", 'cache');
+
   if ($result) {
-    $formatted = $result->data;
-    $content = ContentGenerator::generateBlockContent($formatted, $instance_id, 1, $term_code);
+    $result = db_query("SELECT settings FROM {laf_courses_display_config} WHERE instanceID = :ID", array(':ID' => $instance_id))->fetch();
+    $settings = @unserialize($result->settings);
+    $class = $settings['controllerclass'];
+    $courseBlock = new $class;
+    $formatted = $data->data;
+    $content = ContentGenerator::generateBlockContent($instance_id, $courseBlock, $formatted, $settings, $term_code);
     return $content;
   }
   else {
@@ -463,5 +457,5 @@ function get_term_form($form, &$form_state, $links, $default, $instance_id) {
  * Implements hook_laf_courses_display_block_class.
  */
 function laf_courses_display_laf_courses_display_block_class() {
-  return drupal_get_path('module', 'laf_courses_display') . "/lib/LafayetteCourseBlock.php";
+  return "LafayetteCourseBlock";
 }

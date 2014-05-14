@@ -3,3 +3,6 @@ description = defines blocks to display Moodle courses
 core = 7.x
 package = Lafayette
 dependencies[] = ctools
+files[] = lib/ContentGenerator.php
+files[] = lib/CourseBlockInterface.php
+files[] = lib/LafayetteCourseBlock.php

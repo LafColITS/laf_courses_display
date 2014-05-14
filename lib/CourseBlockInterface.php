@@ -87,15 +87,12 @@
    * This function generates a link back to the Moodle site. Additional
    * settings provided with additionalSettings are available here if needed.
    *
-   * @param string $site_url
-   *   The base URL of the Moodle instance.
-   *
    * @param array $settings
    *   The settings array of the block instance.
    *
    * @return string
    *   A URL that links to the Moodle site.
    */
-  public function createSiteLink($site_url, $settings);
+  public function createSiteLink($settings);
 
  }

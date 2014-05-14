@@ -135,7 +135,8 @@ class LafayetteCourseBlock implements CourseBlockInterface {
   /**
    * Generate the link back to the Moodle site.
    */
-  public function createSiteLink($site_url, $settings) {
+  public function createSiteLink($settings) {
+    $site_url = $settings['siteURL'];
     $auth_url = str_replace('http://', 'https://', $site_url);
     $shib_idp = $settings['shibIDP'];
     return $auth_url . '/alt?providerID=' . $shib_idp . '&target=' . $site_url;
