@@ -1,11 +1,11 @@
 <?php
 
 class LafayetteCourseBlock implements CourseBlockInterface {
-  
+
   /**
    * Parse a term code and return human readable identifier.
    */
-  public static function parseTermCode($code) {
+  public function parseTermCode($code) {
     $year = substr($code, 0, 4);
     $term = substr($code, 4, 2);
     // Year codes for terms don't display intuitively.
@@ -40,11 +40,11 @@ class LafayetteCourseBlock implements CourseBlockInterface {
 
     return $term;
   }
-  
+
   /**
    * Calculate the current term.
    */
-  public static function calculateCurrentTerm() {
+  public function calculateCurrentTerm() {
     $time = date('Ymd');
     $year = substr($time, 0, 4);
 
@@ -57,10 +57,10 @@ class LafayetteCourseBlock implements CourseBlockInterface {
     }
     elseif ((int)$compare < 522) {
       $term = $year . '30';
-    } 
+    }
     elseif ((int)$compare < 701) {
       $term = $year . '40';
-    } 
+    }
     elseif ((int)$compare < 815) {
       $term = $year . '50';
     }
@@ -75,7 +75,7 @@ class LafayetteCourseBlock implements CourseBlockInterface {
   /**
    * Provide additional settings.
    */
-  public static function additionalSettings() {
+  public function additionalSettings() {
     $form['shibIDP'] = array(
       '#type' => 'textfield',
       '#title' => t('Shibboleth IDP String'),
@@ -91,7 +91,7 @@ class LafayetteCourseBlock implements CourseBlockInterface {
   /**
    * Generate course links.
    */
-  public static function createCourseLink($site_url, $course_id, $settings) {
+  public function createCourseLink($site_url, $course_id, $settings) {
     // Do some formatting stuff.
     $auth_url = str_replace('http://', 'https://', $site_url);
     $shib_idp = $settings['shibIDP'];
@@ -104,7 +104,7 @@ class LafayetteCourseBlock implements CourseBlockInterface {
   /**
    * Generate default term code.
    */
-  public static function defaultTermCode($current_term, $terms) {
+  public function defaultTermCode($current_term, $terms) {
     // Figure out default term here.
     $terms = array();
     foreach ($terms as $term) {
@@ -132,6 +132,13 @@ class LafayetteCourseBlock implements CourseBlockInterface {
     return $term_code;
   }
 
+  /**
+   * Generate the link back to the Moodle site.
+   */
+  public function createSiteLink($site_url, $settings) {
+    $auth_url = str_replace('http://', 'https://', $site_url);
+    $shib_idp = $settings['shibIDP'];
+    return $auth_url . '/alt?providerID=' . $shib_idp . '&target=' . $site_url;
+  }
+
 }
-
-

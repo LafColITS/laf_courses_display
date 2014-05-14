@@ -10,14 +10,14 @@
    *
    * This function takes a course term code returned and turns it into a human
    * readable term identifier for display.
-   * 
+   *
    * @param string $code
    *   A course term code returned by Moodle.
    *
    * @return string
    *   A human-readable string title for the course term.
    */
-  public static function parseTermCode($code);
+  public function parseTermCode($code);
 
   /**
    * Determine the current term code.
@@ -28,13 +28,13 @@
    * @return string
    *   A properly formatted term code.
    */
-  public static function calculateCurrentTerm();
+  public function calculateCurrentTerm();
 
   /**
    * Select default term given current term and term data.
    *
    * Determine what the default term in the term picker menu should be. This
-   * function receives the terms that were returned in valid course data and 
+   * function receives the terms that were returned in valid course data and
    * the value of this implementation of calculateCurrentTerm.
    *
    * @param string $current_term
@@ -46,7 +46,7 @@
    * @return string
    *   A properly formatted term code to serve as the default.
    */
-  public static function defaultTermCode($current_term, $terms);
+  public function defaultTermCode($current_term, $terms);
 
   /**
    * Provide additional instance configuration settings.
@@ -58,10 +58,10 @@
    * @return array
    *   A Drupal Form API array for the settings.
    */
-  public static function additionalSettings();
+  public function additionalSettings();
 
   /**
-   * Provide a formatted link to the course.
+   * Provide a formatted URL to the course.
    *
    * This function generates a link back to the listed course in Moodle.
    * Additional settings provided with additionalSettings are available here
@@ -79,6 +79,23 @@
    * @return string
    *   A URL that links to the course in Moodle.
    */
-  public static function createCourseLink($site_url, $course_id, $settings);
+  public function createCourseLink($site_url, $course_id, $settings);
+
+  /**
+   * Provide a formatted URL to the site.
+   *
+   * This function generates a link back to the Moodle site. Additional
+   * settings provided with additionalSettings are available here if needed.
+   *
+   * @param string $site_url
+   *   The base URL of the Moodle instance.
+   *
+   * @param array $settings
+   *   The settings array of the block instance.
+   *
+   * @return string
+   *   A URL that links to the Moodle site.
+   */
+  public function createSiteLink($site_url, $settings);
 
  }
