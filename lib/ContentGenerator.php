@@ -115,7 +115,7 @@ class ContentGenerator {
       if ($courseInfo['visible'] == 1) {
         $courses['active'][] = array(
           'href' => self::call($courseBlock, 'createCourseLink', $courseInfo['id'], $settings),
-          'title' => html_entity_decode($courseInfo['fullname']),
+          'title' => html_entity_decode($courseInfo['fullname'], ENT_QUOTES),
           'attributes' => array('target' => '_blank'),
           'term' => $courseInfo['term'],
         );
@@ -123,7 +123,7 @@ class ContentGenerator {
       else if ($courseInfo['visible'] == 0) {
         $courses['inactive'][] = array(
           'href' => self::call($courseBlock, 'createCourseLink', $courseInfo['id'], $settings),
-          'title' => html_entity_decode($courseInfo['fullname']),
+          'title' => html_entity_decode($courseInfo['fullname'], ENT_QUOTES),
           'attribues' => array('target' => '_blank'),
           'term' => $courseInfo['term'],
         );
