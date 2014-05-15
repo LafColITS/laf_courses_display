@@ -216,20 +216,20 @@ class ContentGenerator {
     // Add necessary Javascript.
     self::addBlockJs();
     $content = '';
-    if ($check = !empty($activecontent)) {
+    if ($check = !empty($activecontent['links'])) {
       if ($usetermcode == 1 && $dropdown == 1 && !empty($terms)) {
         $content .= drupal_render(drupal_get_form('get_term_form', $terms, $defaultterm, $instanceid));
       }
       $content .= "<div id='ajax_content_response_$instanceid' class='item-list'>";
       $content .= theme('links', $activecontent);
     }
-    if (!empty($inactivecontent)) {
+    if (!empty($inactivecontent['links'])) {
       $inactiveprocessed = theme('links', $inactivecontent);
       $handle = t('Inactive Courses');
       $content .= theme('ctools_collapsible',
         array(
           'handle' => $handle,
-          'content' => $inactive_content,
+          'content' => $inactiveprocessed,
           'collapsed' => TRUE,
         ));
     }
