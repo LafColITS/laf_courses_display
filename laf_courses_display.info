@@ -6,3 +6,4 @@ dependencies[] = ctools
 files[] = lib/ContentGenerator.php
 files[] = lib/CourseBlockInterface.php
 files[] = lib/LafayetteCourseBlock.php
+files[] = lib/TermlessCourseBlock.php

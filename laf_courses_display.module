@@ -457,5 +457,5 @@ function get_term_form($form, &$form_state, $links, $default, $instance_id) {
  * Implements hook_laf_courses_display_block_class.
  */
 function laf_courses_display_laf_courses_display_block_class() {
-  return "LafayetteCourseBlock";
+  return array("LafayetteCourseBlock", "TermlessCourseBlock");
 }
