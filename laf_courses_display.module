@@ -159,7 +159,7 @@ function laf_courses_display_edit_form($form, &$form_state, $instance_id) {
       $additionalSettings[$key]['#default_value'] = $settings[$key];
     }
   }
-  $form += $additionalSettings;
+  $form = array_merge($form, $additionalSettings);
   $form['instanceID'] = array(
     '#type' => 'value',
     '#value' => $instance_id,
@@ -188,11 +188,11 @@ function laf_courses_display_edit_form_submit($form, &$form_state) {
   $instance_id = $form_state['values']['instanceID'];
 
   $rows = db_update('laf_courses_display_config')
-  ->fields(array(
+    ->fields(array(
       'settings' => $serialized,
-  ))
-  ->condition('instanceID', $instance_id, '=')
-  ->execute();
+    ))
+    ->condition('instanceID', $instance_id, '=')
+    ->execute();
 
   $form_state['redirect'] = 'admin/config/services/laf_courses_display';
   drupal_set_message(t('The settings have been saved.'));
@@ -291,7 +291,7 @@ function laf_courses_display_add_form($form, &$form_state) {
   if (!empty($form_state['values']['controllerclass'])) {
     $class = $form_state['values']['controllerclass'];
     $courseBlock = new $class;
-    $form += ContentGenerator::call($courseBlock, 'additionalSettings');
+    $form = array_merge($form, ContentGenerator::call($courseBlock, 'additionalSettings'));
   }
 
 
@@ -323,10 +323,10 @@ function laf_courses_display_add_form_submit($form, $form_state) {
   }
   $serialized = serialize($settings);
   $instance_id = db_insert('laf_courses_display_config')
-  ->fields(array(
-    'settings' => $serialized,
-  ))
-  ->execute();
+    ->fields(array(
+      'settings' => $serialized,
+    ))
+    ->execute();
 
   $form_state['redirect'] = 'admin/config/services/laf_courses_display';
   drupal_set_message(t('The settings have been saved.'));
