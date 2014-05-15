@@ -132,8 +132,6 @@ class ContentGenerator {
     return $courses;
   }
 
-
-
   /**
    * Generate content to display in block.
    */
@@ -183,7 +181,6 @@ class ContentGenerator {
 
     return self::formatContent($options);
   }
-
 
   /**
    * Comparison function for sorting links arrays.

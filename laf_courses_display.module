@@ -360,7 +360,6 @@ function laf_courses_display_block_view($block_name = '') {
   global $user;
 
   if (substr($block_name, 0, 20) == 'laf_courses_display_') {
-    // Do display stuff.
 
     $offset = strrpos($block_name, '_');
     $offset = $offset - strlen($block_name);
@@ -374,7 +373,6 @@ function laf_courses_display_block_view($block_name = '') {
 
     $request_url = ContentGenerator::formatCurlRequest($instance_id, $user_mail, $settings);
     $formatted = ContentGenerator::getData($instance_id, $uid, $request_url);
-    // Here we need to generate default term code instead of passing 0
     if (!empty($formatted)) {
       $content = ContentGenerator::generateBlockContent($instance_id, $courseBlock, $formatted, $settings, 0);
     }
