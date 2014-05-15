@@ -215,12 +215,14 @@ class ContentGenerator {
     }
     // Add necessary Javascript.
     self::addBlockJs();
+
+    // Generate html from course arrays.
     $content = '';
-    if ($check = !empty($activecontent['links'])) {
-      if ($usetermcode == 1 && $dropdown == 1 && !empty($terms)) {
-        $content .= drupal_render(drupal_get_form('get_term_form', $terms, $defaultterm, $instanceid));
-      }
-      $content .= "<div id='ajax_content_response_$instanceid' class='item-list'>";
+    if ($usetermcode == 1 && $dropdown == 1 && !empty($terms)) {
+      $content .= drupal_render(drupal_get_form('get_term_form', $terms, $defaultterm, $instanceid));
+    }
+    $content .= "<div id='ajax_content_response_$instanceid' class='item-list'>";
+    if (!empty($activecontent['links'])) {
       $content .= theme('links', $activecontent);
     }
     if (!empty($inactivecontent['links'])) {
@@ -233,9 +235,7 @@ class ContentGenerator {
           'collapsed' => TRUE,
         ));
     }
-    if ($check) {
-      $content .= "</div>";
-    }
+    $content .= "</div>";
     return $content;
   }
 
