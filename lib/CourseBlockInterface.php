@@ -67,9 +67,6 @@
    * Additional settings provided with additionalSettings are available here
    * if needed.
    *
-   * @param string $site_url
-   *   The base URL of the Moodle instance.
-   *
    * @param string $course_id
    *   The course id of the course being linked.
    *
@@ -79,7 +76,7 @@
    * @return string
    *   A URL that links to the course in Moodle.
    */
-  public function createCourseLink($site_url, $course_id, $settings);
+  public function createCourseLink($course_id, $settings);
 
   /**
    * Provide a formatted URL to the site.

@@ -17,6 +17,9 @@ class ContentGenerator {
     // Now we get the data from our curl request.
     $ch = curl_init($request_url);
 
+    // Option to follow redirects.
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+
     // Option to receive data as string directly.
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
 
@@ -24,7 +27,6 @@ class ContentGenerator {
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
     $json_result = curl_exec($ch);
     curl_close($ch);
-
     // Check for no response.
     if (!$json_result) {
       return array();
@@ -48,7 +50,7 @@ class ContentGenerator {
    * Formats curl request urls.
    */
   public static function formatCurlRequest($instance_id, $user_mail, $settings) {
-    $moodle_base_url = $settings['siteURL'];
+    $moodle_base_url = str_replace('http://', 'https://', $settings['siteURL']);
     $webservice_token = $settings['webservicetoken'];
     $webservice_function_name = $settings['functionname'];
     $params = array('username' => $user_mail);
@@ -92,9 +94,109 @@ class ContentGenerator {
   }
 
   /**
+   * Return an array of terms from the course list.
+   */
+  private static function generateTermList($courseBlock, $formatted) {
+    $terms = array();
+    foreach ($formatted as $courseInfo) {
+      if (!in_array($courseInfo['term'], $terms)) {
+        $terms[$courseInfo['term']] = self::call($courseBlock, 'parseTermCode', $courseInfo['term']);
+      }
+    }
+    return $terms;
+  }
+
+  /**
+   * Split course list into active and inactive and reformat info array.
+   */
+  private static function formatCourseInfo($courseBlock, $formatted, $settings) {
+    $courses = array();
+    foreach ($formatted as $courseInfo) {
+      if ($courseInfo['visible'] == 1) {
+        $courses['active'][] = array(
+          'href' => self::call($courseBlock, 'createCourseLink', $courseInfo['id'], $settings),
+          'title' => $courseInfo['fullname'],
+          'attributes' => array('target' => '_blank'),
+          'term' => $courseInfo['term'],
+        );
+      }
+      else if ($courseInfo['visible'] == 0) {
+        $courses['inactive'][] = array(
+          'href' => self::call($courseBlock, 'createCourseLink', $courseInfo['id'], $settings),
+          'title' => $courseInfo['fullname'],
+          'attribues' => array('target' => '_blank'),
+          'term' => $courseInfo['term'],
+        );
+      }
+    }
+    return $courses;
+  }
+
+
+
+  /**
    * Generate content to display in block.
    */
-  public static function generate_block_content($instance_id, $courseBlock, $formatted, $settings, $selected_term) {
+  public static function generateBlockContent($instance_id, $courseBlock, $formatted, $settings, $selected_term) {
+
+    if ($settings['usetermcode']) {
+      $terms = self::generateTermList($courseBlock, $formatted);
+    }
+
+    $courses = self::formatCourseInfo($courseBlock, $formatted, $settings);
+
+    if (!empty($courses['active'])) {
+      if ($settings['usetermcode']) {
+        $sorted = self::termSelect($courseBlock, $courses['active'], $selected_term, $terms);
+        $default_term = $sorted['term'];
+        $variables['links'] = $sorted['courses'];
+      }
+      else {
+        $variables['links'] = $courses['active'];
+      }
+      uasort($variables['links'], array('self', 'compareLinksAlphabetical'));
+      $variables['attributes'] = array();
+    }
+
+    if (!empty($courses['inactive'])) {
+      if ($settings['usetermcode']) {
+        $sorted = self::termSelect($courseBlock, $courses['inactive'], $selected_term, $terms);
+        $default_term = $sorted['term'];
+        $inactive['links'] = $sorted['courses'];
+      }
+      else {
+        $inactive['links'] = $courses['inactive'];
+      }
+      uasort($inactive['links'], array('self', 'compareLinksAlphabetical'));
+      $inactive['attributes'] = array();
+    }
+
+    $options = array(
+      'instanceid' => $instance_id,
+      'usetermcode' => $settings['usetermcode'],
+      'dropdown' => !$selected_term,
+      'terms' => isset($terms) ? $terms : array(),
+      'defaultterm' => isset($default_term) ? $default_term : '',
+      'activecontent' => isset($variables) ? $variables : array(),
+      'inactivecontent' => isset($inactive) ? $inactive : array(),
+    );
+
+    return self::formatContent($options);
+  }
+
+
+  /**
+   * Comparison function for sorting links arrays.
+   */
+  private static function compareLinksAlphabetical($a, $b) {
+    // We are given two arrays, and want to compare their 'title' fields.
+    return strnatcasecmp($a['title'], $b['title']);
+  }
+
+  /**
+   * Add javascript necessary for block.
+   */
+  private static function addBlockJs() {
     drupal_add_js('misc/ajax.js');
     drupal_add_library('system', 'drupal.ajax');
     drupal_add_library('system', 'jquery.form');
@@ -104,95 +206,28 @@ class ContentGenerator {
     $js .= "});";
 
     drupal_add_js($js, 'inline');
+  }
 
-    // Renderable output.
+  /**
+   * Format content for display.
+   */
+  private static function formatContent($options) {
+    // Setup options variables.
+    foreach ($options as $key => $value) {
+      $$key = $value;
+    }
+    // Add necessary Javascript.
+    self::addBlockJs();
     $content = '';
-
-    // For default content.
-    $variables = array();
-
-    // For inactive content.
-    $inactive = array();
-
-    // For all content.
-    $links = array();
-
-    // For course terms.
-    $drop_links = array();
-
-    // For looping through $links.
-    $i = 0;
-
-    // For looping through $drop_links.
-    $j = 0;
-
-    // Determine whether to render drop-down menu.
-    $drop_down_flag = 0;
-
-    if (!$selected_term) {
-      $drop_down_flag = 1;
+    if ($check = !empty($activecontent)) {
+      if ($usetermcode == 1 && $dropdown == 1 && !empty($terms)) {
+        $content .= drupal_render(drupal_get_form('get_term_form', $terms, $defaultterm, $instanceid));
+      }
+      $content .= "<div id='ajax_content_response_$instanceid' class='item-list'>";
+      $content .= theme('links', $activecontent);
     }
-    foreach ($formatted as $link_info) {
-      $links[$i]['href'] = self::call($courseBlock, 'createCourseLink', $site_url, $link_info['id'], $settings);
-      $links[$i]['title'] = html_entity_decode($link_info['fullname'], ENT_QUOTES);
-      $links[$i]['attributes'] = array('target' => '_blank');
-      // If there is a term field specified, generate the link string.
-      if (!empty($link_info['term'])) {
-        $links[$i]['term'] = $link_info['term'];
-        $k = 1;
-        $test_link = self::call($courseBlock, 'parseTermCode', $link_info['term']);
-        foreach ($drop_links as $comp_link) {
-          $k = 1;
-          if (strcmp($test_link, $comp_link['title']) == 0) {
-            $k = 0;
-            break;
-          }
-        }
-        if ($k == 1) {
-          $drop_links[$j]['title'] = $test_link;
-          $drop_links[$j]['code'] = $link_info['term'];
-          $j = $j + 1;
-        }
-      }
-      // TODO: Fix data problem when only visible course has no term code. Hack fix on line 625
-      if ($link_info['visible'] == 1) {
-        $variables['links'][] = $links[$i];
-      }
-      else {
-        $inactive['links'][] = $links[$i];
-      }
-      $i = $i + 1;
-    }
-    if ($check = !empty($variables)) {
-      if ($use_term_code) {
-        $sorted = self::termSelect($courseBlock, $variables['links'], $selected_term, $drop_links);
-        $default_term = $sorted['term'];
-        $variables['links'] = $sorted['courses'];
-      }
-      uasort($variables['links'], 'compare_links_alphabetical');
-      $variables['attributes'] = array();
-      if ($use_term_code == 1 && $drop_down_flag == 1 && !empty($drop_links)) {
-        $content .= drupal_render(drupal_get_form('get_term_form', $drop_links, $default_term, $instance_id));
-      }
-      $content .= "<div id='ajax_content_response_$instance_id' class='item-list'>";
-      if ($use_term_code) {
-        $term_display = self::call($courseBlock, 'parseTermCode', $default_term);
-      }
-      $content .= theme('links', $variables);
-    }
-    if (!empty($inactive)) {
-      if ($use_term_code) {
-        $sorted = self::termSelect($courseBlock, $inactive['links'], $selected_term, $drop_links);
-        $default_term = $sorted['term'];
-        $inactive['links'] = $sorted['courses'];
-      }
-      uasort($inactive['links'], array(self, 'compare_links_alphabetical'));
-      $inactive['attributes'] = array();
-      $inactive_content = theme('links', $inactive);
-    }
-
-    // Collapsible div.
-    if (!empty($inactive['links'])) {
+    if (!empty($inactivecontent)) {
+      $inactiveprocessed = theme('links', $inactivecontent);
       $handle = t('Inactive Courses');
       $content .= theme('ctools_collapsible',
         array(
@@ -206,15 +241,5 @@ class ContentGenerator {
     }
     return $content;
   }
-
-
-  /**
-   * Comparison function for sorting links arrays.
-   */
-  public static function compare_links_alphabetical($a, $b) {
-    // We are given two arrays, and want to compare their 'title' fields.
-    return strnatcasecmp($a['title'], $b['title']);
-  }
-
 
 }

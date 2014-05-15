@@ -91,8 +91,9 @@ class LafayetteCourseBlock implements CourseBlockInterface {
   /**
    * Generate course links.
    */
-  public function createCourseLink($site_url, $course_id, $settings) {
+  public function createCourseLink($course_id, $settings) {
     // Do some formatting stuff.
+    $site_url = $settings['siteURL'];
     $auth_url = str_replace('http://', 'https://', $site_url);
     $shib_idp = $settings['shibIDP'];
     $link_url = $auth_url . '/alt?providerID=' . $shib_idp . '&target=' . $site_url . '/course/view.php?id=' . $course_id;
@@ -104,11 +105,11 @@ class LafayetteCourseBlock implements CourseBlockInterface {
   /**
    * Generate default term code.
    */
-  public function defaultTermCode($current_term, $terms) {
+  public function defaultTermCode($current_term, $term_array) {
     // Figure out default term here.
     $terms = array();
-    foreach ($terms as $term) {
-      $terms[] = $term;
+    foreach ($term_array as $code => $title) {
+      $terms[] = $code;
     }
     if (in_array($current_term, $terms)) {
       $term_code = $current_term;
