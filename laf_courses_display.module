@@ -152,6 +152,17 @@ function laf_courses_display_edit_form($form, &$form_state, $instance_id) {
     '#description' => t('Indicates whether or not to use a term drop down box in the block display.'),
     '#default_value' => $settings['usetermcode'],
   );
+
+  $form['cachelifetime'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Cache Lifetime'),
+    '#description' => t('How long webservice returns should be cached for, in seconds.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#required' => TRUE,
+    '#default_value' => $settings['cachelifetime'],
+  );
+
   $courseBlock = new $class;
   $additionalSettings = ContentGenerator::call($courseBlock, 'additionalSettings');
   foreach ($additionalSettings as $key => $element) {
@@ -288,6 +299,16 @@ function laf_courses_display_add_form($form, &$form_state) {
     '#weight' => -6,
   );
 
+  $form['cachelifetime'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Cache Lifetime'),
+    '#description' => t('How long webservice returns should be cached for, in seconds.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#required' => TRUE,
+    '#weight' => -5,
+  );
+
   if (!empty($form_state['values']['controllerclass'])) {
     $class = $form_state['values']['controllerclass'];
     $courseBlock = new $class;
@@ -370,9 +391,9 @@ function laf_courses_display_block_view($block_name = '') {
     $user_mail = db_query("SELECT mail FROM {users} WHERE uid = :uid", array(':uid' => $uid))->fetch()->mail;
     $class = $settings['controllerclass'];
     $courseBlock = new $class;
-
+    $cache_lifetime = $settings['cachelifetime'];
     $request_url = ContentGenerator::formatCurlRequest($instance_id, $user_mail, $settings);
-    $formatted = ContentGenerator::getData($instance_id, $uid, $request_url);
+    $formatted = ContentGenerator::getData($instance_id, $uid, $request_url, $cache_lifetime);
     if (!empty($formatted)) {
       $content = ContentGenerator::generateBlockContent($instance_id, $courseBlock, $formatted, $settings, 0);
     }

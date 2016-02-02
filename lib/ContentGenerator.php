@@ -5,7 +5,7 @@ class ContentGenerator {
   /**
    * Accesses the webservice and stores/replaces results in the database.
    */
-  public static function getData($instance_id, $uid, $request_url) {
+  public static function getData($instance_id, $uid, $request_url, $cache_lifetime) {
 
     // Check if the cache is good.
     if ($cache = cache_get("laf_courses_display:$instance_id:$uid", 'cache')) {
@@ -40,7 +40,7 @@ class ContentGenerator {
     }
 
     // Store the data in the cache.
-    $expire = REQUEST_TIME + (24*60*60);
+    $expire = REQUEST_TIME + ($cache_lifetime);
     cache_set("laf_courses_display:$instance_id:$uid", $formatted, 'cache', $expire);
 
     return $formatted;
